@@ -28,7 +28,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-status-bar',
     'expo-secure-store',
     'expo-font',
-    '@react-native-google-signin/google-signin',
     ['expo-audio', { microphonePermission: 'Allow Awaaz to record your spoken report.' }],
     ['expo-location', { locationWhenInUsePermission: 'Allow Awaaz to place your report on the map.' }],
     [

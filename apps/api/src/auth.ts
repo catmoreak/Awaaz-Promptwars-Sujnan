@@ -1,18 +1,21 @@
 import type { FastifyRequest } from 'fastify';
-import { OAuth2Client } from 'google-auth-library';
 import { SignJWT, jwtVerify } from 'jose';
-import type { UserDto } from '@awaaz/shared';
+import type { RegisterInput, UserDto } from '@awaaz/shared';
 import { env } from './config';
 import { db } from './db';
-import { forbidden, unauthorized, unavailable } from './errors';
-import type { User } from './generated/prisma/client';
+import { HttpError, forbidden, unauthorized } from './errors';
+import { Prisma, type User } from './generated/prisma/client';
+import { hashPassword, verifyPassword } from './passwords';
 
 const ISSUER = 'awaaz';
 const secret = new TextEncoder().encode(env.JWT_SECRET);
-const googleClient = new OAuth2Client();
+
+const DEMO_CITIZEN = { phone: '9000000000', password: 'demo1234', name: 'Demo Citizen' };
+
+const wrongCredentials = (what: string) => new HttpError(401, 'wrong_credentials', `${what} or password is incorrect`);
 
 export function toUserDto(user: User): UserDto {
-  return { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, role: user.role };
+  return { id: user.id, name: user.name, phone: user.phone, email: user.email, role: user.role };
 }
 
 export function signSession(user: User): Promise<string> {
@@ -25,44 +28,70 @@ export function signSession(user: User): Promise<string> {
     .sign(secret);
 }
 
-/** The admin allowlist is checked at every sign-in, so removing an email takes effect on the next one. */
-export async function loginWithGoogle(idToken: string): Promise<User> {
-  if (env.GOOGLE_OAUTH_CLIENT_IDS.length === 0) {
-    throw unavailable('google_login_unavailable', 'Google Sign-In is not configured');
-  }
-
-  let payload;
+export async function registerCitizen(input: RegisterInput): Promise<User> {
+  const { password, ...profile } = input;
   try {
-    const ticket = await googleClient.verifyIdToken({ idToken, audience: env.GOOGLE_OAUTH_CLIENT_IDS });
-    payload = ticket.getPayload();
-  } catch {
-    throw unauthorized();
+    return await db.user.create({ data: { ...profile, passwordHash: await hashPassword(password) } });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new HttpError(409, 'phone_taken', 'This phone number is already registered. Sign in instead.');
+    }
+    throw error;
   }
-  if (!payload?.sub || !payload.email || !payload.email_verified) throw unauthorized();
+}
 
-  const email = payload.email.toLowerCase();
-  const fields = {
-    email,
-    name: payload.name ?? email,
-    avatarUrl: payload.picture ?? null,
-    role: env.ADMIN_EMAILS.map((item) => item.toLowerCase()).includes(email) ? ('ADMIN' as const) : ('CITIZEN' as const),
-  };
-  return db.user.upsert({
-    where: { googleSub: payload.sub },
-    create: { googleSub: payload.sub, ...fields },
-    update: fields,
+/** Checks a password even when no account exists, so response time does not reveal who has registered. */
+async function matchesPassword(user: User | null, password: string): Promise<boolean> {
+  const stored = user?.passwordHash ?? (await placeholderHash);
+  const valid = await verifyPassword(password, stored);
+  return valid && user !== null;
+}
+
+const placeholderHash = hashPassword('placeholder for accounts that do not exist');
+
+export async function loginCitizen(phone: string, password: string): Promise<User> {
+  const user = await db.user.findUnique({ where: { phone } });
+  if (!(await matchesPassword(user, password)) || user?.role !== 'CITIZEN') throw wrongCredentials('Phone number');
+  return user;
+}
+
+export async function loginAdmin(email: string, password: string): Promise<User> {
+  const user = await db.user.findUnique({ where: { email } });
+  if (!(await matchesPassword(user, password)) || user?.role !== 'ADMIN') throw wrongCredentials('Email');
+  return user;
+}
+
+/** Creates the officer account from the environment, and applies a changed password on the next start. */
+export async function ensureAdmin(): Promise<void> {
+  if (!env.ADMIN_EMAIL || !env.ADMIN_PASSWORD) return;
+
+  const email = env.ADMIN_EMAIL.toLowerCase();
+  const existing = await db.user.findUnique({ where: { email } });
+  if (existing && (await verifyPassword(env.ADMIN_PASSWORD, existing.passwordHash))) return;
+
+  const passwordHash = await hashPassword(env.ADMIN_PASSWORD);
+  await db.user.upsert({
+    where: { email },
+    create: { email, passwordHash, name: 'Municipal Officer', role: 'ADMIN' },
+    update: { passwordHash, role: 'ADMIN' },
   });
 }
 
-export function loginAsDemo(role: 'CITIZEN' | 'ADMIN'): Promise<User> {
-  const profile =
-    role === 'ADMIN'
-      ? { email: 'demo.admin@awaaz.invalid', name: 'Demo Officer' }
-      : { email: 'demo.citizen@awaaz.invalid', name: 'Demo Citizen' };
+/** Owns the seeded reports, so the demo citizen's report list is not empty. */
+export async function ensureDemoCitizen(): Promise<User> {
+  const passwordHash = await hashPassword(DEMO_CITIZEN.password);
   return db.user.upsert({
-    where: { email: profile.email },
-    create: { ...profile, role, isDemo: true },
-    update: { role },
+    where: { phone: DEMO_CITIZEN.phone },
+    create: {
+      phone: DEMO_CITIZEN.phone,
+      passwordHash,
+      name: DEMO_CITIZEN.name,
+      addressLine: 'Synthetic demo address',
+      locality: 'Moodbidri',
+      pincode: '574227',
+      isDemo: true,
+    },
+    update: { passwordHash },
   });
 }
 

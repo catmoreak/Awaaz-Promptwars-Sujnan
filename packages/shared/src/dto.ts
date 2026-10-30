@@ -6,8 +6,8 @@ export type Role = 'CITIZEN' | 'ADMIN';
 export interface UserDto {
   id: string;
   name: string;
-  email: string;
-  avatarUrl: string | null;
+  phone: string | null;
+  email: string | null;
   role: Role;
 }
 
@@ -197,8 +197,6 @@ export interface CompareResponse {
 }
 
 export interface AppConfigResponse {
-  demoLoginEnabled: boolean;
-  googleLoginEnabled: boolean;
   aiEnabled: boolean;
   voiceEnabled: boolean;
   placesEnabled: boolean;

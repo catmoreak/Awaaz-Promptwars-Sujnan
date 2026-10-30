@@ -1,8 +1,10 @@
 import { buildApp } from './app';
+import { ensureAdmin } from './auth';
 import { env } from './config';
 import { db } from './db';
 import { startWorker, stopWorker } from './pipeline/worker';
 
+await ensureAdmin();
 const app = await buildApp();
 
 async function shutdown() {

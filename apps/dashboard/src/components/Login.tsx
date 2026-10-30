@@ -1,54 +1,48 @@
-import { GoogleLogin } from '@react-oauth/google';
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { ApiError, api, session } from '../api';
 import { Hexagon } from './Hexagon';
 
-export function Login({ googleEnabled, onSignedIn }: { googleEnabled: boolean; onSignedIn: () => void }) {
+export function Login({ onSignedIn }: { onSignedIn: () => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const config = useQuery({ queryKey: ['config'], queryFn: api.config });
+  const [busy, setBusy] = useState(false);
 
-  const complete = async (login: Promise<{ token: string }>) => {
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
     setError(null);
+    setBusy(true);
     try {
-      session.set((await login).token);
+      session.set((await api.login({ email, password })).token);
       onSignedIn();
     } catch (failure) {
       setError(failure instanceof ApiError ? failure.message : 'Sign-in failed. Try again.');
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
     <main className="login">
-      <div className="login-panel">
+      <form className="login-panel" onSubmit={(event) => void submit(event)}>
         <Hexagon className="login-mark" />
         <h1>Awaaz</h1>
         <p>Choose what Moodbidri fixes first, and show citizens what happened next.</p>
 
-        {googleEnabled && (
-          <GoogleLogin
-            onSuccess={(response) => {
-              if (response.credential) void complete(api.loginGoogle(response.credential));
-            }}
-            onError={() => setError('Google Sign-In did not complete. Try again.')}
-          />
-        )}
+        <label>
+          Email
+          <input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} />
+        </label>
+        <label>
+          Password
+          <input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
+        </label>
 
-        {config.data?.demoLoginEnabled && (
-          <div className="demo-login">
-            <button className="button button-primary" onClick={() => void complete(api.loginDemo())}>
-              Open the demo officer desk
-            </button>
-            <small>Demo sign-in for local testing. It is off in production.</small>
-          </div>
-        )}
-
-        {!googleEnabled && !config.data?.demoLoginEnabled && !config.isLoading && (
-          <p className="form-error">Sign-in is not set up. Add a Google client ID to continue.</p>
-        )}
-        {config.isError && <p className="form-error">The Awaaz server cannot be reached. Start the API and reload.</p>}
         {error && <p className="form-error">{error}</p>}
-      </div>
+        <button className="button button-primary" disabled={busy}>
+          {busy ? 'Signing in' : 'Sign in'}
+        </button>
+      </form>
     </main>
   );
 }

@@ -17,7 +17,7 @@ const VIEWS: { id: View; label: string }[] = [
   { id: 'add', label: 'Add a report' },
 ];
 
-export function App({ googleEnabled }: { googleEnabled: boolean }) {
+export function App() {
   const queryClient = useQueryClient();
   const [signedIn, setSignedIn] = useState(Boolean(session.get()));
   const [view, setView] = useState<View>('triage');
@@ -38,19 +38,7 @@ export function App({ googleEnabled }: { googleEnabled: boolean }) {
 
   const sessionExpired = me.error instanceof ApiError && me.error.status === 401;
   if (!signedIn || sessionExpired) {
-    return <Login googleEnabled={googleEnabled} onSignedIn={() => setSignedIn(true)} />;
-  }
-
-  if (me.data && me.data.role !== 'ADMIN') {
-    return (
-      <main className="centered-message">
-        <h1>This account is not an officer account</h1>
-        <p>{me.data.email} can report issues in the Awaaz app. Ask your administrator to add this email to the officer list.</p>
-        <button className="button" onClick={signOut}>
-          Sign out
-        </button>
-      </main>
-    );
+    return <Login onSignedIn={() => setSignedIn(true)} />;
   }
 
   return (

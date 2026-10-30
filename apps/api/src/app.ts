@@ -29,11 +29,7 @@ export async function buildApp() {
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError) {
-      const issue = error.issues[0];
-      return reply.code(400).send({
-        code: 'invalid_input',
-        message: issue ? `${issue.path.join('.') || 'body'}: ${issue.message}` : 'Invalid input',
-      });
+      return reply.code(400).send({ code: 'invalid_input', message: error.issues[0]?.message ?? 'Invalid input' });
     }
     if (error instanceof HttpError) {
       return reply.code(error.statusCode).send({ code: error.code, message: error.message });

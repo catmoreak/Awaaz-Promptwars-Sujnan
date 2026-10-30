@@ -3,6 +3,8 @@ import type {
   AuthResponse,
   CitizenReportDto,
   CreateReportInput,
+  LoginForm,
+  RegisterForm,
   TranscribeInput,
   TranscribeResponse,
 } from '@awaaz/shared';
@@ -51,8 +53,8 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
 
 export const api = {
   config: () => request<AppConfigResponse>('/v1/config'),
-  loginGoogle: (idToken: string) => request<AuthResponse>('/v1/auth/google', { idToken }),
-  loginDemo: () => request<AuthResponse>('/v1/auth/demo', { role: 'CITIZEN' }),
+  register: (input: RegisterForm) => request<AuthResponse>('/v1/auth/register', input),
+  login: (input: LoginForm) => request<AuthResponse>('/v1/auth/login', input),
   me: () => request<AuthResponse['user']>('/v1/me'),
   myReports: () => request<CitizenReportDto[]>('/v1/reports/mine'),
   report: (id: string) => request<CitizenReportDto>(`/v1/reports/${id}`),

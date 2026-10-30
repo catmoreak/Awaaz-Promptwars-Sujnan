@@ -195,8 +195,7 @@ textarea {
 
 .login-panel {
   display: grid;
-  justify-items: start;
-  gap: 16px;
+  gap: 14px;
   width: min(420px, 100%);
   padding: 32px;
   border-radius: 10px;
@@ -210,24 +209,6 @@ textarea {
 .login-mark {
   width: 52px;
   color: var(--monsoon);
-}
-
-.demo-login {
-  display: grid;
-  gap: 6px;
-}
-
-.demo-login small {
-  color: var(--ink-faint);
-}
-
-.centered-message {
-  display: grid;
-  justify-items: start;
-  gap: 12px;
-  max-width: 520px;
-  margin: 15dvh auto 0;
-  padding: 16px;
 }
 
 /* Shell */

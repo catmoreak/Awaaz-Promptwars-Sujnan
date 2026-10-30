@@ -1,5 +1,5 @@
 import { STATUS_LABELS, TRANSITIONS, type IssueStatus } from '@awaaz/shared';
-import { loginAsDemo } from '../src/auth';
+import { ensureAdmin, ensureDemoCitizen } from '../src/auth';
 import { db } from '../src/db';
 import { h3Cells } from '../src/geo';
 import { drainQueue } from '../src/pipeline/worker';
@@ -112,7 +112,8 @@ async function replayHistory(demoOwnerId: string) {
 async function main() {
   await clearSynthetic();
   await seedTeams();
-  const demoCitizen = await loginAsDemo('CITIZEN');
+  await ensureAdmin();
+  const demoCitizen = await ensureDemoCitizen();
   await replayHistory(demoCitizen.id);
 
   const [reports, issues, failed] = await Promise.all([

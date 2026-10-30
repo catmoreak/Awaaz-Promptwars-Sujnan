@@ -1,6 +1,6 @@
 import type {
   ActionBriefDto,
-  AppConfigResponse,
+  AdminLoginForm,
   AuthResponse,
   CompareResponse,
   IssueDetailDto,
@@ -55,9 +55,7 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
 }
 
 export const api = {
-  config: () => request<AppConfigResponse>('/v1/config'),
-  loginGoogle: (idToken: string) => request<AuthResponse>('/v1/auth/google', { idToken }),
-  loginDemo: () => request<AuthResponse>('/v1/auth/demo', { role: 'ADMIN' }),
+  login: (input: AdminLoginForm) => request<AuthResponse>('/v1/auth/admin/login', input),
   me: () => request<AuthResponse['user']>('/v1/me'),
   map: () => request<MapResponse>('/v1/admin/map'),
   issues: () => request<IssueSummaryDto[]>('/v1/admin/issues'),

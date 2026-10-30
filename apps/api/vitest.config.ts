@@ -11,7 +11,6 @@ export default defineConfig({
       MISTRAL_API_KEY: '',
       OPENROUTER_API_KEY: '',
       GOOGLE_MAPS_SERVER_KEY: '',
-      ALLOW_DEMO_LOGIN: 'false',
     },
   },
 });

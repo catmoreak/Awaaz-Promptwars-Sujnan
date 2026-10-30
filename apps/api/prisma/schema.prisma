@@ -61,16 +61,20 @@ enum EventType {
   MERGED
 }
 
+/// Citizens sign in with a phone number and officers with an email address, so each is optional here.
 model User {
-  id        String   @id @default(cuid())
-  googleSub String?  @unique
-  email     String   @unique
-  name      String
-  avatarUrl String?
-  role      Role     @default(CITIZEN)
-  isDemo    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  phone        String?  @unique
+  email        String?  @unique
+  passwordHash String
+  name         String
+  addressLine  String?
+  locality     String?
+  pincode      String?
+  role         Role     @default(CITIZEN)
+  isDemo       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   reports Report[]
   events  IssueEvent[]
