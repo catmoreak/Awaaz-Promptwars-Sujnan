@@ -20,7 +20,7 @@ export interface TranscribeResponse {
   transcript: string;
   language: string;
   english: string;
-  source: 'GEMINI' | 'OPENROUTER';
+  model: string;
 }
 
 export interface DedupeDecision {

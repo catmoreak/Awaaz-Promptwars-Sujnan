@@ -15,7 +15,7 @@
     "eval:dedupe": "tsx scripts/eval-dedupe.ts"
   },
   "dependencies": {
-    "@awaaz/shared": "*",
+    "@awaaz/shared": "workspace:*",
     "@fastify/cors": "11.3.1",
     "@fastify/helmet": "13.2.0",
     "@fastify/rate-limit": "11.2.1",

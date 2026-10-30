@@ -3,6 +3,6 @@
   "private": true,
   "version": "0.1.0",
   "description": "Awaaz turns scattered citizen complaints into prioritized, explainable and trackable action.",
-  "workspaces": ["packages/*", "apps/*"],
+  "packageManager": "pnpm@10.8.1",
   "engines": { "node": ">=22" }
 }
