@@ -6,6 +6,60 @@ A citizen reports a problem by typing, speaking or attaching a photo. Awaaz work
 
 See [LIMITATIONS.md](LIMITATIONS.md) for what is real, what is mocked and where the AI can be wrong.
 
+## Why Awaaz stands out
+
+- **AI does the understanding, and fixed rules make the decisions.** Models read reports and compare them. A published formula sets the score, so every ranking can be checked and explained.
+- **It finds what a list hides.** Duplicates collapse into one case, and hotspots reveal linked and recurring problems in an area.
+- **A danger cannot be buried.** Immediate danger to life sets a minimum score of 75, so one report of a live wire outranks a much-reported pothole.
+- **Built for the town it serves.** Reports work in Kannada and English, by typing or by voice, with satellite maps of Moodbidri.
+- **The AI can fail without losing a report.** Every report is saved before any model runs, and each AI step has a labelled fallback.
+- **Honest about its limits.** Synthetic data is labelled, each analysis records which method produced it, and the limitations note publishes what can go wrong.
+
+### Full coverage of the brief
+
+| Stage | What Awaaz does |
+|---|---|
+| Capture | Text and/or photo, voice, a chosen category, and a map pin, coordinates or an address, on a phone-sized screen. Staff can log calls, walk-ins, messages and social posts into the same queue. |
+| Understand | AI category, summary, English translation, hazard, exposure and duplicate check, followed by a formula score with the reasoning shown. |
+| Reveal | A ranked queue, a satellite map coloured by priority, and hotspots that show linked problems and recurrence. A trends page shows volumes over time. |
+| Act | Review, assign, start, resolve or close with a reason. Every step is recorded with its time, and citizens see status and notes from their side. |
+
+Three of the four example AI capabilities in the brief are built: duplicate detection, explainable prioritization and hotspot detection. Each issue also gives officers a short AI summary, but Awaaz does not generate full action briefs.
+
+### AI strengths
+
+- **Layered duplicate detection.** Location narrows the field, embeddings measure similarity, and a model judges the uncertain cases. Doubtful pairs stay separate, because a wrong merge hides a real problem.
+- **Explainable prioritization.** Six visible factors add up to the score, and officers can select two issues to see in plain language why one outranks the other.
+- **Fair to repeat reports.** Corroboration is on a log scale, and one citizen counts once however many times they repost, so volume alone cannot take over the queue.
+- **Safety net for model mistakes.** A safety keyword in the original text or its translation can raise hazard, but never lower it.
+- **Resistant to manipulation.** Citizen text and writing in photos are treated as untrusted data, and every model reply is validated against a schema before use. Angry wording and injected instructions did not raise scores in live tests.
+- **Reads photos.** A vision model describes each photo and notes whether it matches the report, and a photo with no text is enough to file a report.
+- **Fallbacks at every step.** Mistral falls back to OpenRouter and then to keyword rules. Embeddings fall back to a local method, and uncertain duplicates stay separate if no model can answer.
+
+### Measured results
+
+| Measure | Result |
+|---|---|
+| Duplicate detection on 46 labelled synthetic reports | 100% precision and 100% recall, in two runs |
+| Category accuracy, without the citizen's choice as a hint | 100% and 97.8% across the same two runs |
+| 3D home page frame time on Intel integrated graphics at 1440×900 | Reduced from about 58 ms to about 6 ms |
+| Draw calls per frame on the same page | Reduced from 138 to 24 |
+
+The accuracy figures are best-case numbers on a small set written alongside the system. [LIMITATIONS.md](LIMITATIONS.md) explains why. Run `pnpm eval:dedupe` to reproduce them.
+
+### Engineering strengths
+
+- **Security.** Passwords use salted scrypt, and login checks a password even when no account exists, so response time does not reveal who has registered. Sessions use signed tokens with a pinned algorithm. The API enforces roles and report ownership, applies rate limits and a content security policy, and checks each photo's real file signature. The website gets photos only through the API, which applies those same ownership checks.
+- **Reliability.** Reports move through a database-backed queue that recovers from crashes and spaces out retries. Photos fall back to Postgres if storage is down.
+- **Efficiency.** The 3D scene and the signed-in apps load separately, and the scene stops drawing when it is off-screen or behind a dialog. It also lowers its resolution on slow hardware.
+- **Shared rules.** Types, validation, workflow and the priority formula live in one package, so the website and API cannot disagree.
+- **Accessibility.** The site is responsive, keyboard focus is visible, and it respects reduced-motion settings. It is available in Kannada and English, and the sign-in form uses a native dialog.
+- **Testing.** Automated tests cover priority, validation, AI fallbacks, duplicate decisions, hotspots and voice, and a repeatable evaluation measures the AI itself.
+
+### Tech stack
+
+React, Vite, three.js, Fastify, TypeScript, Prisma, Neon Postgres, Neon Object Storage, Uber H3, Google Maps Platform, Google Speech-to-Text, Mistral and OpenRouter.
+
 ## What is in this repository
 
 | Path | What it is |
