@@ -63,7 +63,7 @@ Immediate danger to life sets a minimum score of 75, so a live wire with one rep
 
 **Hotspots** group open issues by H3 resolution 9 cell and join touching cells into one area. An area becomes a hotspot with three or more issues, or with two issues that fit a known cause chain, such as a blocked drain, waterlogging and road damage. Past resolved issues in the same area flag a problem as recurring. On request, a model writes a short action brief using only the listed evidence, and any suspected cause is worded as a hypothesis to check on site.
 
-**Voice** uses Google Cloud Speech-to-Text for Kannada (`kn-IN`) and English (`en-IN`). The citizen chooses the language before speaking, because Google documents automatic language detection for voice commands only. The citizen sees the transcript and can correct it before sending. Audio is not stored. Android records AMR-WB and the website sends WAV, both at 16 kHz mono, because the API does not accept Android's usual AAC.
+**Voice** uses Google Cloud Speech-to-Text with the `latest_short` model for Kannada (`kn-IN`) and English (`en-IN`). That model beat `default` and `latest_long` in both languages on test clips, and a list of local place names and civic words improves recognition further. The citizen chooses the language before speaking, because Google documents automatic language detection for voice commands only. The citizen sees the transcript and can correct it before sending. Audio is not stored. Android records AMR-WB and the website sends WAV, both at 16 kHz mono, because the API does not accept Android's usual AAC.
 
 ## Running it locally
 

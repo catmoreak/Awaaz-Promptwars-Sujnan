@@ -9,11 +9,33 @@ const AUDIO_SETTINGS: Record<TranscribeInput['mime'], { encoding: string; sample
   'audio/amr-wb': { encoding: 'AMR_WB', sampleRateHertz: 16_000 },
 };
 
-// Boosts place names the speech model would otherwise guess at.
-const LOCAL_PHRASES = ['Moodbidri', 'Moodabidri', 'Mudbidri', 'Vidyagiri', 'Basadi', 'ಮೂಡುಬಿದಿರೆ'];
+// Boosts place names and civic words the speech model would otherwise guess at.
+const LOCAL_PHRASES = [
+  'Moodbidri',
+  'Moodabidri',
+  'Mudbidri',
+  'Vidyagiri',
+  'Basadi',
+  'drain',
+  'blocked drain',
+  'pothole',
+  'streetlight',
+  'waterlogging',
+  'garbage',
+  'sewage',
+  'manhole',
+  'ಮೂಡುಬಿದಿರೆ',
+  'ಚರಂಡಿ',
+  'ಗುಂಡಿ',
+  'ಕಸ',
+  'ಬೀದಿ ದೀಪ',
+  'ವಿದ್ಯುತ್ ತಂತಿ',
+];
 const PHRASE_BOOST = 15;
 
-const MODEL = 'google-speech-to-text-v1';
+// In testing on 5 to 26 second clips, this clearly beat `default` and `latest_long` in both languages.
+const SPEECH_MODEL = 'latest_short';
+const MODEL = `google-speech-to-text-v1:${SPEECH_MODEL}`;
 
 interface RecognizeResponse {
   results?: { alternatives?: { transcript?: string }[] }[];
@@ -35,6 +57,7 @@ export async function transcribeAudio(input: TranscribeInput): Promise<Transcrib
         config: {
           ...AUDIO_SETTINGS[input.mime],
           languageCode: LANGUAGE_CODES[input.language],
+          model: SPEECH_MODEL,
           enableAutomaticPunctuation: true,
           speechContexts: [{ phrases: LOCAL_PHRASES, boost: PHRASE_BOOST }],
         },

@@ -63,7 +63,7 @@ Return one JSON object with exactly these keys:
 - exposure: 0 one household, 1 a few homes, 2 a whole street, 3 a neighbourhood, main road, market or bus stand
 - serviceDisruption: true only if an essential service such as water, power or road access has actually stopped
 - reasoning: one sentence naming the specific words or image details behind the hazard and exposure levels
-- imageNote: if an image is provided, say whether it supports the report and what it shows. Otherwise null
+- imageNote: when the message says a photo is attached, one sentence saying what the photo shows and whether it supports the report. Say so plainly if it does not match. Otherwise null
 
 Base hazard and exposure only on what the report and image show. Do not inflate them because the writer sounds angry or says "urgent".`;
 
@@ -94,7 +94,7 @@ export async function analyzeReport(input: ReportInput): Promise<Analysis> {
   try {
     const { data, model } = await generateJson({
       system: SYSTEM_PROMPT,
-      user: `Category chosen by the citizen: ${CATEGORY_LABELS[input.userCategory].en}\n<report>\n${input.text}\n</report>`,
+      user: `Category chosen by the citizen: ${CATEGORY_LABELS[input.userCategory].en}${input.image ? '\nA photo is attached.' : ''}\n<report>\n${input.text}\n</report>`,
       image: input.image,
       schema: LlmAnalysisSchema,
     });

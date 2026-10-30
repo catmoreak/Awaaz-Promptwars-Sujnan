@@ -20,6 +20,7 @@ function QueueItem({
   selected,
   compared,
   onSelect,
+  onHover,
   onToggleCompare,
 }: {
   issue: IssueSummaryDto;
@@ -27,10 +28,11 @@ function QueueItem({
   selected: boolean;
   compared: boolean;
   onSelect: () => void;
+  onHover: (hovering: boolean) => void;
   onToggleCompare: () => void;
 }) {
   return (
-    <li className="queue-item" data-selected={selected || undefined}>
+    <li className="queue-item" data-selected={selected || undefined} onMouseEnter={() => onHover(true)} onMouseLeave={() => onHover(false)}>
       <button className="queue-open" onClick={onSelect} aria-label={`Rank ${rank}: ${issue.title}`}>
         <ScoreHex score={issue.priority.score} band={issue.priority.band} />
         <span className="queue-text">
@@ -59,6 +61,7 @@ function QueueItem({
 
 export function Triage({ selectedIssueId, onSelectIssue }: TriageProps) {
   const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [hoveredIssueId, setHoveredIssueId] = useState<string | null>(null);
   const map = useQuery({ queryKey: ['map'], queryFn: api.map, refetchInterval: REFRESH_MS });
 
   const toggleCompare = (id: string) =>
@@ -69,7 +72,7 @@ export function Triage({ selectedIssueId, onSelectIssue }: TriageProps) {
   return (
     <div className="triage">
       <section className="map-column" aria-label="Map of open issues">
-        <MapPanel data={map.data} selectedIssueId={selectedIssueId} onSelectIssue={onSelectIssue} />
+        <MapPanel data={map.data} selectedIssueId={hoveredIssueId ?? selectedIssueId} onSelectIssue={onSelectIssue} />
       </section>
 
       <section className="queue-column" aria-label="Priority queue">
@@ -96,6 +99,7 @@ export function Triage({ selectedIssueId, onSelectIssue }: TriageProps) {
               selected={issue.id === selectedIssueId}
               compared={compareIds.includes(issue.id)}
               onSelect={() => onSelectIssue(issue.id)}
+              onHover={(hovering) => setHoveredIssueId(hovering ? issue.id : null)}
               onToggleCompare={() => toggleCompare(issue.id)}
             />
           ))}

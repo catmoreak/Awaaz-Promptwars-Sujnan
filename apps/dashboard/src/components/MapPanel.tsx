@@ -5,11 +5,29 @@ import { BAND_LABELS } from './Hexagon';
 
 const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
 
+const BANDS = Object.keys(BAND_LABELS) as PriorityBand[];
+
+/** For a light street map. */
 export const BAND_COLORS: Record<PriorityBand, string> = {
   CRITICAL: '#B42318',
   HIGH: '#C4560B',
   MEDIUM: '#A47E00',
   LOW: '#3F7564',
+};
+
+/** For the dark town map, checked for colour-blind separation against the map background. */
+const NIGHT_COLORS: Record<PriorityBand, string> = {
+  CRITICAL: '#E84C66',
+  HIGH: '#F59A2C',
+  MEDIUM: '#F7E48C',
+  LOW: '#4FC3A1',
+};
+
+const NIGHT_TEXT: Record<PriorityBand, string> = {
+  CRITICAL: '#FFFFFF',
+  HIGH: '#12302F',
+  MEDIUM: '#12302F',
+  LOW: '#12302F',
 };
 
 interface MapPanelProps {
@@ -18,12 +36,12 @@ interface MapPanelProps {
   onSelectIssue: (id: string) => void;
 }
 
-function MapLegend() {
+function MapLegend({ colors }: { colors: Record<PriorityBand, string> }) {
   return (
     <ul className="map-legend" aria-label="Map colours by highest priority in each area">
-      {(Object.keys(BAND_LABELS) as PriorityBand[]).map((band) => (
+      {BANDS.map((band) => (
         <li key={band}>
-          <i style={{ background: BAND_COLORS[band] }} />
+          <i style={{ background: colors[band] }} />
           {BAND_LABELS[band]}
         </li>
       ))}
@@ -91,12 +109,14 @@ function GoogleOverlays({ data, onSelectIssue }: Omit<MapPanelProps, 'selectedIs
   return null;
 }
 
-function SchematicMap({ data, selectedIssueId, onSelectIssue }: MapPanelProps) {
+const centerOf = (boundary: { lat: number; lng: number }[]) => ({
+  lat: boundary.reduce((sum, point) => sum + point.lat, 0) / boundary.length,
+  lng: boundary.reduce((sum, point) => sum + point.lng, 0) / boundary.length,
+});
+
+function TownMap({ data, selectedIssueId, onSelectIssue }: MapPanelProps) {
   const view = useMemo(() => {
-    const points = [
-      ...(data?.cells.flatMap((cell) => cell.boundary) ?? []),
-      ...(data?.issues.map(({ lat, lng }) => ({ lat, lng })) ?? []),
-    ];
+    const points = data?.grid.flat() ?? [];
     if (points.length === 0) return null;
 
     const lats = points.map((point) => point.lat);
@@ -104,73 +124,106 @@ function SchematicMap({ data, selectedIssueId, onSelectIssue }: MapPanelProps) {
     const minLat = Math.min(...lats);
     const maxLat = Math.max(...lats);
     const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
     const lngScale = Math.cos((SERVICE_AREA.lat * Math.PI) / 180);
-    const padding = 0.0015;
 
-    const width = (maxLng - minLng) * lngScale + padding * 2;
-    const height = maxLat - minLat + padding * 2;
+    const width = (Math.max(...lngs) - minLng) * lngScale;
+    const height = maxLat - minLat;
     return {
       viewBox: `0 0 ${width} ${height}`,
-      x: (lng: number) => (lng - minLng) * lngScale + padding,
-      y: (lat: number) => maxLat - lat + padding,
+      x: (lng: number) => (lng - minLng) * lngScale,
+      y: (lat: number) => maxLat - lat,
       unit: width / 900,
     };
-  }, [data]);
+  }, [data?.grid]);
 
-  if (!view) return <div className="map-empty">Open issues will appear here once reports arrive.</div>;
+  // The worst areas light up first, so the eye lands on them.
+  const litCells = useMemo(() => [...(data?.cells ?? [])].sort((a, b) => b.topScore - a.topScore), [data?.cells]);
+
+  if (!view || !data) return <div className="map-empty">Loading the town map</div>;
 
   const outline = (boundary: { lat: number; lng: number }[]) =>
     boundary.map(({ lat, lng }) => `${view.x(lng)},${view.y(lat)}`).join(' ');
 
   return (
-    <svg className="schematic-map" viewBox={view.viewBox} role="img" aria-label="Schematic map of open issues in Moodbidri by H3 cell">
-      {data?.cells.map((cell) => (
-        <polygon key={cell.h3} points={outline(cell.boundary)} fill={BAND_COLORS[cell.topBand]} fillOpacity={0.3} stroke={BAND_COLORS[cell.topBand]} strokeWidth={view.unit} />
+    <svg className="town-map" viewBox={view.viewBox} role="img" aria-label="Map of Moodbidri as H3 cells, coloured by the highest priority issue in each">
+      {data.grid.map((boundary, index) => (
+        <polygon key={index} className="town-cell" points={outline(boundary)} strokeWidth={view.unit} />
       ))}
-      {data?.hotspots.flatMap((hotspot) =>
+
+      {litCells.map((cell, index) => {
+        const center = centerOf(cell.boundary);
+        return (
+          <g key={cell.h3} className="lit-cell" style={{ animationDelay: `${Math.min(index, 20) * 45}ms` }}>
+            <polygon points={outline(cell.boundary)} fill={NIGHT_COLORS[cell.topBand]} />
+            {cell.reportCount > 1 && (
+              <text
+                x={view.x(center.lng)}
+                y={view.y(center.lat)}
+                fill={NIGHT_TEXT[cell.topBand]}
+                fontSize={view.unit * 19}
+                fontWeight={700}
+                textAnchor="middle"
+                dominantBaseline="central"
+              >
+                {cell.reportCount}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {data.hotspots.flatMap((hotspot) =>
         hotspot.boundary.map((boundary, index) => (
-          <polygon key={`${hotspot.id}-${index}`} points={outline(boundary)} fill="none" stroke="#0A3D3B" strokeWidth={view.unit * 3} />
+          <polygon key={`${hotspot.id}-${index}`} className="hotspot-outline" points={outline(boundary)} strokeWidth={view.unit * 2.5} />
         )),
       )}
-      {data?.issues.map((issue) => (
-        <circle
-          key={issue.id}
-          className="schematic-pin"
-          cx={view.x(issue.lng)}
-          cy={view.y(issue.lat)}
-          r={view.unit * (issue.id === selectedIssueId ? 11 : 7)}
-          fill={BAND_COLORS[issue.priority.band]}
-          stroke="#FFFFFF"
-          strokeWidth={view.unit * 2}
-          onClick={() => onSelectIssue(issue.id)}
-        >
-          <title>{`${issue.title} (score ${issue.priority.score})`}</title>
-        </circle>
-      ))}
+
+      {data.issues.map((issue) => {
+        const selected = issue.id === selectedIssueId;
+        return (
+          <circle
+            key={issue.id}
+            className="town-pin"
+            cx={view.x(issue.lng)}
+            cy={view.y(issue.lat)}
+            r={view.unit * (selected ? 10 : 4.5)}
+            fill={selected ? '#FFFFFF' : '#0A3D3B'}
+            stroke={selected ? '#0A3D3B' : '#FFFFFF'}
+            strokeWidth={view.unit * (selected ? 3.5 : 1.5)}
+            onClick={() => onSelectIssue(issue.id)}
+          >
+            <title>{`${issue.title} (score ${issue.priority.score})`}</title>
+          </circle>
+        );
+      })}
     </svg>
   );
 }
 
 export function MapPanel(props: MapPanelProps) {
   const center = { lat: SERVICE_AREA.lat, lng: SERVICE_AREA.lng };
+  const synthetic = props.data?.issues.some((issue) => issue.isSynthetic);
 
-  return (
-    <div className="map-frame">
-      {MAPS_KEY ? (
+  if (MAPS_KEY) {
+    return (
+      <div className="map-frame">
         <APIProvider apiKey={MAPS_KEY}>
           <Map defaultCenter={center} defaultZoom={14} gestureHandling="greedy" clickableIcons={false} mapTypeControl={false} streetViewControl={false}>
             <GoogleOverlays data={props.data} onSelectIssue={props.onSelectIssue} />
           </Map>
         </APIProvider>
-      ) : (
-        <>
-          <SchematicMap {...props} />
-          <p className="map-notice">Schematic view from real H3 cells. Add a Google Maps key to show the street map.</p>
-        </>
-      )}
-      <MapLegend />
-      {props.data?.issues.some((issue) => issue.isSynthetic) && <p className="synthetic-flag">Synthetic demo data</p>}
+        <MapLegend colors={BAND_COLORS} />
+        {synthetic && <p className="synthetic-flag">Synthetic demo data</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="map-frame map-night">
+      <TownMap {...props} />
+      <MapLegend colors={NIGHT_COLORS} />
+      <p className="map-notice">Moodbidri as H3 cells, about 350 m across. Numbers count reports.</p>
+      {synthetic && <p className="synthetic-flag">Synthetic demo data</p>}
     </div>
   );
 }

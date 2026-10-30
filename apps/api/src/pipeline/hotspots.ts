@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
-import { gridDisk } from 'h3-js';
+import { gridDisk, latLngToCell } from 'h3-js';
 import {
   CAUSE_CHAINS,
+  H3_RES_HOTSPOT,
   bandFor,
   type Category,
   type HotspotDto,
@@ -113,6 +114,16 @@ export function buildHotspots(open: HotspotIssue[], recentlyResolved: ResolvedIs
       ];
     })
     .sort((a, b) => b.score - a.score);
+}
+
+const TOWN_GRID_RINGS = 11;
+
+let townGrid: LatLng[][] | undefined;
+
+/** Fixed for a given town, so it is calculated once. */
+export function buildTownGrid(center: LatLng): LatLng[][] {
+  townGrid ??= gridDisk(latLngToCell(center.lat, center.lng, H3_RES_HOTSPOT), TOWN_GRID_RINGS).map(cellPolygon);
+  return townGrid;
 }
 
 export function buildMapCells(open: HotspotIssue[]): MapCellDto[] {

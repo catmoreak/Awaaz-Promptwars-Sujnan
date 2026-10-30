@@ -22,12 +22,13 @@ import {
   type TeamDto,
 } from '@awaaz/shared';
 import { requireAdmin } from '../auth';
+import { env } from '../config';
 import { db } from '../db';
 import { HttpError, badRequest, notFound } from '../errors';
 import { Prisma } from '../generated/prisma/client';
 import { issueCode, priorityOf, toAdminReport, toIssueSummary, toTimelineEntry } from '../mappers';
 import { getActionBrief } from '../pipeline/brief';
-import { buildHotspots, buildMapCells, type HotspotIssue } from '../pipeline/hotspots';
+import { buildHotspots, buildMapCells, buildTownGrid, type HotspotIssue } from '../pipeline/hotspots';
 import { refreshIssueAggregates } from '../pipeline/issues';
 import { wakeWorker } from '../pipeline/worker';
 import { saveReport } from '../reports';
@@ -245,6 +246,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.get('/v1/admin/map', async (): Promise<MapResponse> => {
     const open = await loadOpenIssues();
     return {
+      grid: buildTownGrid({ lat: env.SERVICE_CENTER_LAT, lng: env.SERVICE_CENTER_LNG }),
       cells: buildMapCells(open),
       hotspots: await loadHotspots(open),
       issues: open.map(({ h3Res9: _cell, ...issue }) => issue).sort(byPriorityDesc),

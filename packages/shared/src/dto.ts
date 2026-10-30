@@ -171,6 +171,8 @@ export interface ActionBriefDto {
 }
 
 export interface MapResponse {
+  /** Outline of every H3 cell across the town, so the map has shape before anything is reported. */
+  grid: { lat: number; lng: number }[][];
   cells: MapCellDto[];
   hotspots: HotspotDto[];
   issues: IssueSummaryDto[];

@@ -16,7 +16,7 @@ function ProgressDots({ report }: { report: CitizenReportDto }) {
   return (
     <View style={styles.dots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {statusSteps.map((step, index) => (
-        <View key={step} style={[styles.dot, index <= reached && styles.dotReached]} />
+        <Hexagon key={step} size={13} fill={index <= reached ? color.monsoon : color.line} />
       ))}
     </View>
   );
@@ -114,7 +114,5 @@ const styles = StyleSheet.create({
   rowTitle: { color: color.ink, fontFamily: font.medium, fontSize: 16, lineHeight: 22 },
   rowStatus: { alignItems: 'center', flexDirection: 'row', gap: 8, marginTop: 4 },
   rowStatusText: { color: color.monsoon, fontFamily: font.medium, fontSize: 14 },
-  dots: { flexDirection: 'row', gap: 3 },
-  dot: { backgroundColor: color.line, borderRadius: 2, height: 6, width: 14 },
-  dotReached: { backgroundColor: color.monsoon },
+  dots: { flexDirection: 'row', gap: 2 },
 });

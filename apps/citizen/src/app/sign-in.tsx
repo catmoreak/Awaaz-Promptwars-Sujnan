@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, ErrorText, Heading, Hexagon, Muted } from '@/components/ui';
+import { Honeycomb } from '@/components/Honeycomb';
+import { Button, ErrorText, Heading, Muted } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
@@ -53,6 +54,7 @@ export default function SignIn() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.screen}>
+      <Honeycomb />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24, paddingTop: insets.top + 8 }]}
         keyboardShouldPersistTaps="handled"
@@ -62,8 +64,7 @@ export default function SignIn() {
         </Pressable>
 
         <View style={styles.brand}>
-          <Hexagon size={registering ? 44 : 64} fill={color.mint} />
-          <Text style={styles.title}>Awaaz</Text>
+          <Text style={[styles.title, registering && styles.titleSmall]}>Awaaz</Text>
           {!registering && <Text style={styles.tagline}>{t.tagline}</Text>}
         </View>
 
@@ -113,9 +114,10 @@ const styles = StyleSheet.create({
   content: { alignSelf: 'center', flexGrow: 1, gap: 20, justifyContent: 'space-between', maxWidth: 520, paddingHorizontal: 20, width: '100%' },
   language: { alignSelf: 'flex-end', justifyContent: 'center', minHeight: 44, paddingHorizontal: 8 },
   languageText: { color: '#FFFFFF', fontFamily: font.medium, fontSize: 16 },
-  brand: { gap: 8 },
-  title: { color: '#FFFFFF', fontFamily: font.bold, fontSize: 46, lineHeight: 56 },
-  tagline: { color: '#D8E8E5', fontFamily: font.regular, fontSize: 19, lineHeight: 27, maxWidth: 340 },
+  brand: { alignSelf: 'flex-start', backgroundColor: color.monsoonDeep, gap: 4, paddingHorizontal: 14, paddingVertical: 10 },
+  title: { color: '#FFFFFF', fontFamily: font.bold, fontSize: 64, lineHeight: 72 },
+  titleSmall: { fontSize: 36, lineHeight: 44 },
+  tagline: { color: '#D8E8E5', fontFamily: font.regular, fontSize: 19, lineHeight: 27, maxWidth: 300 },
   panel: { backgroundColor: color.surface, borderRadius: 12, gap: 12, padding: 16 },
   subheading: { fontSize: 17, marginTop: 6 },
   field: { gap: 4 },

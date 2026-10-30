@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ApiError, api, session } from '../api';
-import { Hexagon } from './Hexagon';
+import { Honeycomb } from './Honeycomb';
 
 export function Login({ onSignedIn }: { onSignedIn: () => void }) {
   const [email, setEmail] = useState('');
@@ -24,11 +24,16 @@ export function Login({ onSignedIn }: { onSignedIn: () => void }) {
 
   return (
     <main className="login">
-      <form className="login-panel" onSubmit={(event) => void submit(event)}>
-        <Hexagon className="login-mark" />
-        <h1>Awaaz</h1>
-        <p>Choose what Moodbidri fixes first, and show citizens what happened next.</p>
+      <section className="login-art">
+        <Honeycomb />
+        <div className="login-brand">
+          <h1>Awaaz</h1>
+          <p>Choose what Moodbidri fixes first, and show citizens what happened next.</p>
+        </div>
+      </section>
 
+      <form className="login-form" onSubmit={(event) => void submit(event)}>
+        <h2>Officer sign-in</h2>
         <label>
           Email
           <input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} />

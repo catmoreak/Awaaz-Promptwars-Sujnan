@@ -187,28 +187,57 @@ textarea {
 /* Sign-in */
 .login {
   display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
   min-height: 100dvh;
-  place-items: center;
-  padding: 16px;
-  background: var(--monsoon-deep);
-}
-
-.login-panel {
-  display: grid;
-  gap: 14px;
-  width: min(420px, 100%);
-  padding: 32px;
-  border-radius: 10px;
   background: var(--surface);
 }
 
-.login-panel h1 {
-  font-size: 2.5rem;
+.login-art {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 240px;
+  padding: 40px;
+  background: var(--monsoon-deep);
+  color: #ffffff;
+  overflow: hidden;
 }
 
-.login-mark {
-  width: 52px;
-  color: var(--monsoon);
+.honeycomb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.login-brand {
+  position: relative;
+  max-width: 34rem;
+  padding: 18px 22px;
+  background: var(--monsoon-deep);
+}
+
+.login-brand h1 {
+  font-size: clamp(3.5rem, 8vw, 6.5rem);
+  font-weight: 750;
+  font-stretch: 85%;
+  line-height: 1;
+}
+
+.login-brand p {
+  margin-top: 8px;
+  color: #d8e8e5;
+  font-size: 1.25rem;
+  line-height: 1.35;
+}
+
+.login-form {
+  display: grid;
+  align-content: center;
+  gap: 16px;
+  width: min(400px, 100%);
+  margin: 0 auto;
+  padding: 32px 24px;
 }
 
 /* Shell */
@@ -307,14 +336,39 @@ textarea {
   overflow: hidden;
 }
 
-.schematic-map {
+.map-night {
+  background: var(--monsoon-deep);
+}
+
+.town-map {
   display: block;
   width: 100%;
   height: 100%;
-  background-color: #dfe9e7;
 }
 
-.schematic-pin {
+.town-cell {
+  fill: none;
+  stroke: #7fd0c6;
+  stroke-opacity: 0.2;
+}
+
+.lit-cell {
+  animation: cell-light 420ms ease-out both;
+}
+
+@keyframes cell-light {
+  from {
+    opacity: 0;
+  }
+}
+
+.hotspot-outline {
+  fill: none;
+  stroke: #ffffff;
+  stroke-linejoin: round;
+}
+
+.town-pin {
   cursor: pointer;
 }
 
@@ -333,8 +387,8 @@ textarea {
   max-width: 340px;
   padding: 6px 10px;
   border-radius: 6px;
-  background: rgb(255 255 255 / 92%);
-  color: var(--ink-soft);
+  background: rgb(10 61 59 / 88%);
+  color: #d8e8e5;
   font-size: 0.8125rem;
 }
 
@@ -364,7 +418,7 @@ textarea {
 }
 
 .map-legend .legend-hotspot {
-  border: 2px solid var(--monsoon-deep);
+  border: 2px solid var(--ink);
   background: transparent;
 }
 
@@ -374,10 +428,10 @@ textarea {
   right: 12px;
   padding: 4px 10px;
   border-radius: 6px;
-  background: var(--ink);
-  color: #ffffff;
+  background: #ffffff;
+  color: var(--ink);
   font-size: 0.8125rem;
-  font-weight: 550;
+  font-weight: 600;
 }
 
 .queue-column {
@@ -804,10 +858,22 @@ tbody th {
 
 .hotspot {
   display: grid;
-  gap: 8px;
-  padding: 16px 18px;
-  border-left: 4px solid var(--monsoon);
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px;
   background: var(--surface);
+}
+
+.hotspot-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.footprint {
+  width: 76px;
+  max-height: 96px;
+  color: var(--band);
 }
 
 .hotspot header {
@@ -837,7 +903,7 @@ tbody th {
   font-size: 0.9375rem;
 }
 
-.hotspot > .button {
+.hotspot-body > .button {
   justify-self: start;
 }
 
@@ -993,6 +1059,15 @@ tbody th {
 }
 
 @media (max-width: 960px) {
+  .login {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+  }
+
+  .login-art {
+    padding: 20px 16px;
+  }
+
   .topbar {
     flex-wrap: wrap;
     gap: 6px 16px;
@@ -1042,6 +1117,10 @@ tbody th {
 @media (max-width: 480px) {
   .form-row {
     grid-template-columns: 1fr;
+  }
+
+  .hotspot {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

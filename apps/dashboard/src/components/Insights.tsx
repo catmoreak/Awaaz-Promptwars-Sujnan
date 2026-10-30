@@ -1,4 +1,4 @@
-import { CATEGORY_LABELS, type ActionBriefDto, type HotspotDto, type IssueSummaryDto, type StatsResponse } from '@awaaz/shared';
+import { CATEGORY_LABELS, SERVICE_AREA, type ActionBriefDto, type HotspotDto, type IssueSummaryDto, type StatsResponse } from '@awaaz/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Repeat2 } from 'lucide-react';
 import { useState } from 'react';
@@ -34,6 +34,27 @@ function BriefBody({ brief }: { brief: ActionBriefDto }) {
   );
 }
 
+/** The hotspot's real footprint, so each area is recognisable by its shape. */
+function Footprint({ hotspot }: { hotspot: HotspotDto }) {
+  const points = hotspot.boundary.flat();
+  const minLat = Math.min(...points.map((point) => point.lat));
+  const maxLat = Math.max(...points.map((point) => point.lat));
+  const minLng = Math.min(...points.map((point) => point.lng));
+  const maxLng = Math.max(...points.map((point) => point.lng));
+  const width = (maxLng - minLng) * Math.cos((SERVICE_AREA.lat * Math.PI) / 180);
+  const height = maxLat - minLat;
+  const toPoints = (boundary: HotspotDto['boundary'][number]) =>
+    boundary.map(({ lat, lng }) => `${(lng - minLng) * Math.cos((SERVICE_AREA.lat * Math.PI) / 180)},${maxLat - lat}`).join(' ');
+
+  return (
+    <svg className={`footprint band-${hotspot.topBand.toLowerCase()}`} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+      {hotspot.boundary.map((boundary, index) => (
+        <polygon key={index} points={toPoints(boundary)} fill="currentColor" stroke="var(--surface)" strokeWidth={Math.max(width, height) * 0.03} />
+      ))}
+    </svg>
+  );
+}
+
 function HotspotCard({
   hotspot,
   issues,
@@ -52,6 +73,8 @@ function HotspotCard({
 
   return (
     <article className="hotspot">
+      <Footprint hotspot={hotspot} />
+      <div className="hotspot-body">
       <header>
         <BandTag band={hotspot.topBand} />
         <h3>{hotspot.label}</h3>
@@ -89,6 +112,7 @@ function HotspotCard({
       {wantBrief && brief.isPending && <p className="muted">Writing the brief</p>}
       {brief.isError && <p className="form-error">{brief.error.message}</p>}
       {brief.data && <BriefBody brief={brief.data} />}
+      </div>
     </article>
   );
 }

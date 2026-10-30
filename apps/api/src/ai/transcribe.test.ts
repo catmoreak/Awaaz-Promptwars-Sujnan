@@ -30,7 +30,7 @@ describe('transcribeAudio', () => {
     await transcribe(clip);
 
     const body = JSON.parse(fetchMock.mock.calls[0]?.[1].body as string);
-    expect(body.config).toMatchObject({ languageCode: 'kn-IN', encoding: 'LINEAR16', sampleRateHertz: 16000 });
+    expect(body.config).toMatchObject({ languageCode: 'kn-IN', encoding: 'LINEAR16', sampleRateHertz: 16000, model: 'latest_short' });
     expect(body.audio.content).toBe(clip.base64);
   });
 

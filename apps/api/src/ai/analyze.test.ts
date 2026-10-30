@@ -99,6 +99,16 @@ describe('analyzeReport', () => {
     expect(result.reasoning).toContain('safety keyword check');
   });
 
+  it('tells the model when a photo is attached, and passes it on', async () => {
+    const fetchMock = mockReplies({ ...validReply, imageNote: 'The photo shows an overflowing bin.' });
+    const analyze = await loadAnalyzer({ mistral: 'key' });
+    const result = await analyze({ ...input, image: { base64: 'abcd', mime: 'image/jpeg' } });
+    const body = JSON.parse(fetchMock.mock.calls[0]?.[1].body as string);
+    expect(body.messages[1].content[0].text).toContain('A photo is attached.');
+    expect(body.messages[1].content[1].image_url).toContain('data:image/jpeg;base64,abcd');
+    expect(result.imageNote).toBe('The photo shows an overflowing bin.');
+  });
+
   it('marks citizen text as data in the prompt', async () => {
     const fetchMock = mockReplies(validReply);
     const analyze = await loadAnalyzer({ mistral: 'key' });

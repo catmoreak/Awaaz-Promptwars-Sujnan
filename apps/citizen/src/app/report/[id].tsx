@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Check } from 'lucide-react-native';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BandLabel, Body, Button, Divider, ErrorText, Heading, Muted } from '@/components/ui';
+import { BandLabel, Body, Button, Divider, ErrorText, Heading, Hexagon, Muted } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { color, font, statusSteps } from '@/theme';
@@ -25,7 +25,14 @@ function ProgressSteps({ status }: { status: IssueStatus }) {
         return (
           <View key={step} style={styles.step}>
             <View style={styles.stepMarker}>
-              <View style={[styles.stepDot, done && styles.stepDotDone]}>{done && <Check color="#FFFFFF" size={14} />}</View>
+              <View style={styles.stepHex}>
+                <Hexagon size={26} fill={done ? color.monsoon : color.line} />
+                {done && (
+                  <View style={styles.stepCheck}>
+                    <Check color="#FFFFFF" size={14} />
+                  </View>
+                )}
+              </View>
               {!isLast && <View style={[styles.stepLine, index < reached && styles.stepLineDone]} />}
             </View>
             <Text style={[styles.stepLabel, done && styles.stepLabelDone, index === reached && styles.stepLabelCurrent]}>
@@ -173,18 +180,9 @@ const styles = StyleSheet.create({
   field: { gap: 1 },
   photo: { aspectRatio: 4 / 3, borderRadius: 8, width: '100%' },
   step: { flexDirection: 'row', gap: 10, minHeight: 38 },
-  stepMarker: { alignItems: 'center', width: 22 },
-  stepDot: {
-    alignItems: 'center',
-    backgroundColor: color.surface,
-    borderColor: color.line,
-    borderRadius: 11,
-    borderWidth: 2,
-    height: 22,
-    justifyContent: 'center',
-    width: 22,
-  },
-  stepDotDone: { backgroundColor: color.monsoon, borderColor: color.monsoon },
+  stepMarker: { alignItems: 'center', width: 26 },
+  stepHex: { alignItems: 'center', height: 26, justifyContent: 'center', width: 26 },
+  stepCheck: { position: 'absolute' },
   stepLine: { backgroundColor: color.line, flex: 1, width: 2 },
   stepLineDone: { backgroundColor: color.monsoon },
   stepLabel: { color: color.inkFaint, fontFamily: font.regular, fontSize: 16, lineHeight: 22 },
