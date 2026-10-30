@@ -252,6 +252,10 @@ export function IssueDrawer({ issueId, onClose, onSelectIssue }: IssueDrawerProp
   const data = issue.data;
   const isOpen = data && !['RESOLVED', 'REJECTED'].includes(data.status);
   const photoReports = data?.reports.filter((report) => report.hasImage) ?? [];
+  // Only doubts nobody could settle. A model that compared the two and said no needs no second look.
+  const unsettled = data?.reports
+    .map((report) => report.analysis?.dedupe)
+    .find((dedupe) => dedupe?.decision === 'NEW_ISSUE' && dedupe.method === 'NO_LLM_REVIEW' && dedupe.comparedIssueId);
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -298,6 +302,11 @@ export function IssueDrawer({ issueId, onClose, onSelectIssue }: IssueDrawerProp
                 <section className="drawer-section">
                   {data.address && <p className="muted">{data.address}</p>}
                   <p>{data.summary}</p>
+                  {unsettled?.comparedIssueId && (
+                    <button className="text-button" onClick={() => onSelectIssue(unsettled.comparedIssueId as string)}>
+                      Possible duplicate, not confirmed. Open the similar issue
+                    </button>
+                  )}
                   {photoReports.length > 0 && (
                     <div className="issue-photos">
                       {photoReports.map((report) => (

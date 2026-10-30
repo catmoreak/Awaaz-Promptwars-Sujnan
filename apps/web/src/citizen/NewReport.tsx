@@ -153,15 +153,15 @@ export function NewReport({ onSent }: { onSent: (id: string) => void }) {
 
   const send = () => {
     setFormError(null);
-    if (text.trim().length < LIMITS.textMin) return setFormError(t.textRequired);
-    if (!point) return setFormError(t.locationRequired);
+    if (text.trim().length < LIMITS.textMin && !photo) return setFormError(t.textRequired);
+    if (!point && landmark.trim().length < 3) return setFormError(t.locationRequired);
 
     submit.mutate({
       clientRequestId,
       text: text.trim(),
       category: category ?? 'OTHER',
-      lat: point.lat,
-      lng: point.lng,
+      lat: point?.lat,
+      lng: point?.lng,
       address: landmark.trim() || undefined,
       viaVoice,
       image: photo ? { base64: photo.split(',')[1] ?? '', mime: 'image/jpeg' } : undefined,

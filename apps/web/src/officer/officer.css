@@ -405,8 +405,7 @@
 }
 
 .map-legend,
-.map-notice,
-.synthetic-flag {
+.map-notice {
   position: absolute;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -446,13 +445,6 @@
   left: 16px;
   padding: 6px 12px;
   color: var(--muted);
-}
-
-.synthetic-flag {
-  top: 16px;
-  right: 16px;
-  padding: 6px 12px;
-  font-weight: 550;
 }
 
 .hotspot-column {
@@ -1080,4 +1072,19 @@ button.live-row:hover .live-title {
 .issue-photos {
   display: grid;
   gap: 8px;
+}
+
+.demo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.hotspot-chain {
+  color: var(--muted);
+  font-size: 0.875rem;
 }

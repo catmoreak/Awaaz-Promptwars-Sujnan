@@ -16,23 +16,34 @@ const DAY_MS = 86_400_000;
 /** What every issue row needs, so a new report or photo shows up on rows as well as inside them. */
 export const issueSummaryInclude = {
   team: true,
-  reports: { select: { createdAt: true, image: { select: { reportId: true } } } },
+  reports: { select: { createdAt: true, userId: true, source: true, image: { select: { reportId: true } } } },
 } satisfies Prisma.IssueInclude;
 
-type SummaryIssue = Issue & { team: Team | null; reports: { createdAt: Date; image: { reportId: string } | null }[] };
+type ReportOrigin = Pick<Report, 'userId' | 'source'>;
+type SummaryIssue = Issue & { team: Team | null; reports: (ReportOrigin & { createdAt: Date; image: { reportId: string } | null })[] };
+
+/**
+ * One citizen repeating a complaint is one voice, so reposting cannot push an issue up the queue.
+ * Staff entries are counted separately, because each one records a different caller or visitor.
+ */
+export function independentReports(reports: ReportOrigin[]): number {
+  const isCitizen = (report: ReportOrigin) => report.userId !== null && (report.source === 'WEB' || report.source === 'MOBILE');
+  const citizens = new Set(reports.filter(isCitizen).map((report) => report.userId));
+  return citizens.size + reports.filter((report) => !isCitizen(report)).length;
+}
 
 export const issueCode = (seq: number) => `ISS-${String(seq).padStart(4, '0')}`;
 export const reportCode = (seq: number) => `AWZ-${String(seq).padStart(4, '0')}`;
 
 /** Calculated on read, so age counts up and the stored data never holds a stale score. */
-export function priorityOf(issue: Issue, now = new Date()): PriorityResult {
+export function priorityOf(issue: Issue & { reports: ReportOrigin[] }, now = new Date()): PriorityResult {
   const end = issue.resolvedAt ?? now;
   return scorePriority({
     hazard: issue.hazard as Level,
     exposure: issue.exposure as Level,
     serviceDisruption: issue.serviceDisruption,
     sensitiveSites: issue.sensitiveSites as SensitiveSite[] | null,
-    reportCount: issue.reportCount,
+    reportCount: independentReports(issue.reports),
     ageDays: (end.getTime() - issue.firstReportedAt.getTime()) / DAY_MS,
   });
 }
@@ -48,7 +59,8 @@ export function toIssueSummary(issue: SummaryIssue): IssueSummaryDto {
     lat: issue.lat,
     lng: issue.lng,
     address: issue.address,
-    reportCount: issue.reportCount,
+    // Counted live, so a report deleted from the database cannot leave a stale number or score behind.
+    reportCount: issue.reports.length,
     teamId: issue.teamId,
     teamName: issue.team?.name ?? null,
     priority: priorityOf(issue),
@@ -90,11 +102,14 @@ export function toTimelineEntry(event: IssueEvent): TimelineEntry {
   };
 }
 
+/** A photo-only report has no words of its own, so screens show what the analysis saw instead. */
+export const reportText = (report: Pick<Report, 'text' | 'aiSummary'>) => report.text || report.aiSummary || 'Photo report';
+
 export function toAdminReport(report: Report & { user: User | null; image: { reportId: string } | null }): AdminReportDto {
   return {
     id: report.id,
     code: reportCode(report.seq),
-    text: report.text,
+    text: reportText(report),
     source: report.source,
     channel: report.channel,
     viaVoice: report.viaVoice,

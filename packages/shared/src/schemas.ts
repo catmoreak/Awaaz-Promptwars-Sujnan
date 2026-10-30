@@ -16,21 +16,42 @@ export const ImageUploadSchema = z.object({
   mime: z.enum(IMAGE_MIMES),
 });
 
-export const CreateReportSchema = z.object({
+const ReportFieldsSchema = z.object({
   clientRequestId: z.string().uuid(),
-  text: z.string().trim().min(LIMITS.textMin).max(LIMITS.textMax),
+  text: z.string().trim().max(LIMITS.textMax).default(''),
   category: CategorySchema,
-  lat: z.number().min(-90).max(90),
-  lng: z.number().min(-180).max(180),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
   address: z.string().trim().max(300).optional(),
   image: ImageUploadSchema.optional(),
   viaVoice: z.boolean().default(false),
 });
+
+const MIN_ADDRESS_LENGTH = 3;
+
+/** A photo can stand in for a description, and an address can stand in for a pin. */
+const REPORT_RULES = {
+  content: {
+    test: (report: { text: string; image?: unknown }) => report.text.length >= LIMITS.textMin || report.image !== undefined,
+    message: 'Describe the problem or add a photo',
+  },
+  location: {
+    test: (report: { lat?: number; lng?: number; address?: string }) =>
+      (report.lat !== undefined && report.lng !== undefined) || (report.address?.length ?? 0) >= MIN_ADDRESS_LENGTH,
+    message: 'Add a pin, coordinates or an address',
+  },
+};
+
+export const CreateReportSchema = ReportFieldsSchema.refine(REPORT_RULES.content.test, REPORT_RULES.content.message).refine(
+  REPORT_RULES.location.test,
+  REPORT_RULES.location.message,
+);
 export type CreateReportInput = z.input<typeof CreateReportSchema>;
 
-export const StaffReportSchema = CreateReportSchema.omit({ clientRequestId: true, viaVoice: true }).extend({
-  channel: z.enum(['PHONE', 'WALK_IN', 'MESSAGE', 'SOCIAL']),
-});
+export const StaffReportSchema = ReportFieldsSchema.omit({ clientRequestId: true, viaVoice: true })
+  .extend({ channel: z.enum(['PHONE', 'WALK_IN', 'MESSAGE', 'SOCIAL']) })
+  .refine(REPORT_RULES.content.test, REPORT_RULES.content.message)
+  .refine(REPORT_RULES.location.test, REPORT_RULES.location.message);
 export type StaffReportInput = z.input<typeof StaffReportSchema>;
 
 export const TranscribeSchema = z.object({

@@ -76,7 +76,7 @@ export const api = {
   transcribe: (input: TranscribeInput) => request<TranscribeResponse>('/v1/transcribe', input),
   image: (id: string) => request<{ dataUrl: string }>(`/v1/reports/${id}/image`),
 
-  map: () => request<MapResponse>('/v1/admin/map'),
+  map: (includeDemo: boolean) => request<MapResponse>(`/v1/admin/map${includeDemo ? '?demo=1' : ''}`),
   issues: () => request<IssueSummaryDto[]>('/v1/admin/issues'),
   intake: () => request<IntakeReportDto[]>('/v1/admin/intake'),
   retryReport: (id: string) => request<{ id: string }>(`/v1/admin/reports/${id}/retry`, {}),

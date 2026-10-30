@@ -34,6 +34,13 @@ function issue(category: Category, h3Res9: string, reportCount = 1): HotspotIssu
 }
 
 describe('buildHotspots', () => {
+  it('flags a lone issue when the same problem was fixed there before', () => {
+    const open = issue('WASTE', HOME);
+    const [hotspot] = buildHotspots([open], [{ h3Res9: HOME, category: 'WASTE' }]);
+    expect(hotspot?.recurringResolvedCount).toBe(1);
+    expect(buildHotspots([open], [{ h3Res9: HOME, category: 'ROAD_DAMAGE' }])).toEqual([]);
+  });
+
   it('ignores a lone issue', () => {
     expect(buildHotspots([issue('WASTE', HOME)], [])).toEqual([]);
   });

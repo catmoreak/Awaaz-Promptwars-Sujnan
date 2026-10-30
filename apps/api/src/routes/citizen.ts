@@ -5,7 +5,7 @@ import { requireUser } from '../auth';
 import { db } from '../db';
 import { forbidden, notFound } from '../errors';
 import { Prisma } from '../generated/prisma/client';
-import { issueCode, priorityOf, reportCode, toAnalysis, toTimelineEntry } from '../mappers';
+import { issueCode, priorityOf, reportCode, reportText, toAnalysis, toTimelineEntry } from '../mappers';
 import { wakeWorker } from '../pipeline/worker';
 import { readImage, saveReport } from '../reports';
 
@@ -16,6 +16,7 @@ const includeForCitizen = {
   issue: {
     include: {
       team: true,
+      reports: { select: { userId: true, source: true } },
       // Only status steps reach citizens. Internal linking events are for staff.
       events: { where: { type: { in: ['CREATED', 'STATUS_CHANGED', 'ASSIGNED'] } }, orderBy: { createdAt: 'asc' } },
     },
@@ -29,7 +30,7 @@ function toCitizenReport(report: CitizenReport): CitizenReportDto {
   return {
     id: report.id,
     code: reportCode(report.seq),
-    text: report.text,
+    text: reportText(report),
     category: report.aiCategory ?? report.userCategory,
     address: report.address,
     lat: report.lat,

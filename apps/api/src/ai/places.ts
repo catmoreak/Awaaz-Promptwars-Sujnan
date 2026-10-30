@@ -1,4 +1,4 @@
-import type { SensitiveSite } from '@awaaz/shared';
+import { SERVICE_AREA, type SensitiveSite } from '@awaaz/shared';
 import { env, features } from '../config';
 import { distanceMeters, type LatLng } from '../geo';
 
@@ -34,7 +34,10 @@ export async function nearbySensitiveSites(point: LatLng): Promise<SensitiveSite
         },
       }),
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error(`Google Places refused the lookup (${response.status}). Check the API restrictions on GOOGLE_MAPS_SERVER_KEY.`);
+      return null;
+    }
 
     const body = (await response.json()) as PlacesResponse;
     return (body.places ?? []).flatMap((place): SensitiveSite[] => {
@@ -52,18 +55,36 @@ export async function nearbySensitiveSites(point: LatLng): Promise<SensitiveSite
   }
 }
 
-export async function reverseGeocode(point: LatLng): Promise<string | null> {
+interface GeocodeResponse {
+  status?: string;
+  results?: { formatted_address?: string; geometry?: { location?: LatLng } }[];
+}
+
+/** Google answers 200 even when it refuses a request, so the status inside the reply has to be checked. */
+async function geocode(params: Record<string, string>): Promise<GeocodeResponse | null> {
   if (!features.places) return null;
 
   try {
     const url = new URL('https://maps.googleapis.com/maps/api/geocode/json');
-    url.searchParams.set('latlng', `${point.lat},${point.lng}`);
+    for (const [name, value] of Object.entries(params)) url.searchParams.set(name, value);
     url.searchParams.set('key', env.GOOGLE_MAPS_SERVER_KEY);
     const response = await fetch(url, { signal: AbortSignal.timeout(8_000) });
-    if (!response.ok) return null;
-    const body = (await response.json()) as { results?: { formatted_address?: string }[] };
-    return body.results?.[0]?.formatted_address ?? null;
+    const body = (await response.json()) as GeocodeResponse;
+    if (body.status === 'OK' || body.status === 'ZERO_RESULTS') return body;
+    console.error(`Google Geocoding refused the lookup (${body.status}). Check the API restrictions on GOOGLE_MAPS_SERVER_KEY.`);
+    return null;
   } catch {
     return null;
   }
+}
+
+export async function reverseGeocode(point: LatLng): Promise<string | null> {
+  const body = await geocode({ latlng: `${point.lat},${point.lng}` });
+  return body?.results?.[0]?.formatted_address ?? null;
+}
+
+/** Looks a typed place up inside the town, so "bus stand" does not find a bus stand elsewhere in India. */
+export async function geocodeAddress(address: string): Promise<LatLng | null> {
+  const body = await geocode({ address: `${address}, ${SERVICE_AREA.name}, Karnataka`, components: 'country:IN' });
+  return body?.results?.[0]?.geometry?.location ?? null;
 }

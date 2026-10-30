@@ -37,18 +37,22 @@ const RECURRENCE_WINDOW_DAYS = 90;
 const WEEKS_OF_TREND = 8;
 const DAY_MS = 86_400_000;
 
-async function loadOpenIssues(): Promise<HotspotIssue[]> {
+/** An issue only exists through its reports, so one whose reports were all deleted is hidden from staff. */
+const HAS_REPORTS = { reports: { some: {} } };
+
+/** Real complaints only, because a demo row would make a hotspot look like a real pattern in the town. */
+async function loadOpenIssues(includeDemo: boolean): Promise<HotspotIssue[]> {
   const issues = await db.issue.findMany({
-    where: { status: { in: [...OPEN_STATUSES] }, mergedIntoId: null },
+    where: { status: { in: [...OPEN_STATUSES] }, mergedIntoId: null, isSynthetic: includeDemo ? undefined : false, ...HAS_REPORTS },
     include: issueSummaryInclude,
   });
   return issues.map((issue) => ({ ...toIssueSummary(issue), h3Res9: issue.h3Res9 }));
 }
 
-async function loadHotspots(open: HotspotIssue[]) {
+async function loadHotspots(open: HotspotIssue[], includeDemo: boolean) {
   const since = new Date(Date.now() - RECURRENCE_WINDOW_DAYS * DAY_MS);
   const resolved = await db.issue.findMany({
-    where: { status: 'RESOLVED', resolvedAt: { gte: since } },
+    where: { status: 'RESOLVED', resolvedAt: { gte: since }, isSynthetic: includeDemo ? undefined : false, ...HAS_REPORTS },
     select: { h3Res9: true, category: true },
   });
   return buildHotspots(open, resolved);
@@ -99,6 +103,7 @@ export async function adminRoutes(app: FastifyInstance) {
     const { status, category } = request.query;
     const issues = await db.issue.findMany({
       where: {
+        ...HAS_REPORTS,
         mergedIntoId: null,
         status: IssueFiltersSchema.status(status) ? status : undefined,
         category: IssueFiltersSchema.category(category) ? category : undefined,
@@ -272,12 +277,14 @@ export async function adminRoutes(app: FastifyInstance) {
     return { a, b, comparison: comparePriority(a.priority, b.priority) };
   });
 
-  app.get('/v1/admin/map', async (): Promise<MapResponse> => {
-    const open = await loadOpenIssues();
+  /** Real complaints by default. The labelled demo set can be added to rehearse the hotspot view. */
+  app.get<{ Querystring: { demo?: string } }>('/v1/admin/map', async (request): Promise<MapResponse> => {
+    const includeDemo = request.query.demo === '1';
+    const open = await loadOpenIssues(includeDemo);
     return {
       grid: buildTownGrid({ lat: env.SERVICE_CENTER_LAT, lng: env.SERVICE_CENTER_LNG }),
       cells: buildMapCells(open),
-      hotspots: await loadHotspots(open),
+      hotspots: await loadHotspots(open, includeDemo),
       issues: open.map(({ h3Res9: _cell, ...issue }) => issue).sort(byPriorityDesc),
     };
   });
@@ -285,7 +292,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.get('/v1/admin/teams', async (): Promise<TeamDto[]> => {
     const teams = await db.team.findMany({
       orderBy: { name: 'asc' },
-      include: { _count: { select: { issues: { where: { status: { in: [...OPEN_STATUSES] } } } } } },
+      include: { _count: { select: { issues: { where: { status: { in: [...OPEN_STATUSES] }, ...HAS_REPORTS } } } } },
     });
     return teams.map((team) => ({ id: team.id, name: team.name, categories: team.categories, openIssues: team._count.issues }));
   });
@@ -300,7 +307,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.get('/v1/admin/stats', async (): Promise<StatsResponse> => {
     const [issues, reports] = await Promise.all([
-      db.issue.findMany({ where: { mergedIntoId: null } }),
+      db.issue.findMany({ where: { mergedIntoId: null, ...HAS_REPORTS }, include: { reports: { select: { userId: true, source: true } } } }),
       db.report.findMany({ select: { createdAt: true, aiState: true, aiSource: true, issueId: true } }),
     ]);
 

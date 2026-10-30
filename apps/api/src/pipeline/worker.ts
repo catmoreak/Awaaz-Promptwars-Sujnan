@@ -4,6 +4,8 @@ import { processReport } from './process';
 const SWEEP_INTERVAL_MS = 15_000;
 const STALE_CLAIM_MINUTES = 5;
 const MAX_ATTEMPTS = 5;
+/** Each failed attempt waits longer, so a brief outage cannot use up every retry in a few seconds. */
+const RETRY_DELAY_SECONDS = 20;
 
 let draining = false;
 let wakeRequested = false;
@@ -17,6 +19,7 @@ async function claimNext(): Promise<string | null> {
     WHERE id = (
       SELECT id FROM "Report"
       WHERE "aiState" = 'PENDING'
+        AND ("aiClaimedAt" IS NULL OR "aiClaimedAt" < now() - make_interval(secs => ${RETRY_DELAY_SECONDS} * "aiAttempts"))
       ORDER BY "createdAt"
       LIMIT 1
       FOR UPDATE SKIP LOCKED

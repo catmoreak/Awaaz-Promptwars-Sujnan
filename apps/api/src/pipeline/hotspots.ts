@@ -72,8 +72,8 @@ function centerOf(issues: LatLng[]): LatLng {
 }
 
 /**
- * A hotspot is a connected area with enough open issues, or with fewer issues
- * that fit a known cause chain such as a blocked drain flooding a road.
+ * A hotspot is a connected area with enough open issues, with fewer issues that fit a known
+ * cause chain such as a blocked drain flooding a road, or with a problem that has come back.
  */
 export function buildHotspots(open: HotspotIssue[], recentlyResolved: ResolvedIssue[]): HotspotDto[] {
   const byCell = new Map<string, HotspotIssue[]>();
@@ -86,12 +86,13 @@ export function buildHotspots(open: HotspotIssue[], recentlyResolved: ResolvedIs
       for (const issue of issues) counts.set(issue.category, (counts.get(issue.category) ?? 0) + 1);
 
       const chain = linkedChain([...counts.keys()]);
-      const isHotspot = issues.length >= MIN_ISSUES_FOR_HOTSPOT || (chain !== null && issues.length >= MIN_ISSUES_FOR_CHAIN);
-      if (!isHotspot) return [];
-
       const recurringResolvedCount = recentlyResolved.filter(
         (resolved) => cells.includes(resolved.h3Res9) && counts.has(resolved.category),
       ).length;
+
+      const isHotspot =
+        issues.length >= MIN_ISSUES_FOR_HOTSPOT || (chain !== null && issues.length >= MIN_ISSUES_FOR_CHAIN) || recurringResolvedCount > 0;
+      if (!isHotspot) return [];
 
       return [
         {

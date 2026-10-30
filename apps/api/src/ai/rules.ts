@@ -2,8 +2,8 @@ import type { Category, Level } from '@awaaz/shared';
 
 const CATEGORY_KEYWORDS: Record<Exclude<Category, 'OTHER'>, string[]> = {
   ELECTRICAL_HAZARD: ['live wire', 'electric wire', 'fallen wire', 'sparking', 'transformer', 'electric shock', 'ತಂತಿ', 'ವಿದ್ಯುತ್'],
-  WATERLOGGING: ['waterlog', 'flood', 'knee deep', 'standing water', 'water on the road', 'ನೀರು ನಿಂತಿದೆ', 'ಪ್ರವಾಹ'],
-  DRAINAGE: ['drain', 'sewage', 'gutter', 'overflowing sewer', 'manhole', 'ಚರಂಡಿ'],
+  WATERLOGGING: ['waterlogged', 'waterlogging', 'flood', 'knee deep', 'standing water', 'water on the road', 'ನೀರು ನಿಂತಿದೆ', 'ಪ್ರವಾಹ'],
+  DRAINAGE: ['drain', 'drainage', 'sewage', 'gutter', 'overflowing sewer', 'manhole', 'ಚರಂಡಿ'],
   ROAD_DAMAGE: ['pothole', 'road damage', 'broken road', 'road caved', 'crater', 'ಗುಂಡಿ', 'ರಸ್ತೆ'],
   WASTE: ['garbage', 'waste', 'trash', 'dump', 'overflowing bin', 'ಕಸ'],
   STREETLIGHT: ['streetlight', 'street light', 'lamp post', 'dark at night', 'ಬೀದಿ ದೀಪ'],
@@ -14,7 +14,7 @@ const CATEGORY_KEYWORDS: Record<Exclude<Category, 'OTHER'>, string[]> = {
 const HAZARD_KEYWORDS: { level: Level; words: string[] }[] = [
   {
     level: 3,
-    words: ['live wire', 'electric wire', 'fallen wire', 'sparking', 'electric shock', 'electrocut', 'open manhole', 'wall collapse', 'collapsed', 'gas leak', 'on fire', 'caught fire', 'ತಂತಿ', 'ಬೆಂಕಿ'],
+    words: ['live wire', 'electric wire', 'fallen wire', 'sparking', 'electric shock', 'electrocuted', 'electrocution', 'open manhole', 'wall collapse', 'collapsed', 'gas leak', 'on fire', 'caught fire', 'ತಂತಿ', 'ಬೆಂಕಿ'],
   },
   {
     level: 2,
@@ -29,11 +29,11 @@ const EXPOSURE_KEYWORDS: { level: Level; words: string[] }[] = [
 
 const SERVICE_KEYWORDS = ['no water', 'no power', 'road blocked', 'road is blocked', 'no electricity', 'ನೀರು ಬರುತ್ತಿಲ್ಲ'];
 
-/** Latin keywords must start at a word boundary, so "fire" does not match "misfire" but "flood" still matches "flooded". */
+/** Latin keywords match whole words and their endings, so "flood" finds "flooded" but "fell" never finds "fellow". */
 function matches(text: string, word: string): boolean {
   if (!/^[a-z]/.test(word)) return text.includes(word);
   const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`(^|[^a-z])${escaped}`).test(text);
+  return new RegExp(`(^|[^a-z])${escaped}(s|es|d|ed|ing)?($|[^a-z])`).test(text);
 }
 
 function includesAny(text: string, words: string[]): boolean {

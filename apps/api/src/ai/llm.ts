@@ -45,10 +45,16 @@ function userContent(provider: Provider, text: string, image?: ImagePart) {
   ];
 }
 
+/** Models sometimes wrap the object in a code fence or a sentence, so only the object itself is parsed. */
 function parseJsonReply(content: string): unknown {
   const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-  return JSON.parse(fenced?.[1] ?? content);
+  const body = fenced?.[1] ?? content;
+  const [start, end] = [body.indexOf('{'), body.lastIndexOf('}')];
+  return JSON.parse(start >= 0 && end > start ? body.slice(start, end + 1) : body);
 }
+
+/** Removes angle brackets, so citizen text cannot close the tag that marks it as data. */
+export const untrusted = (text: string) => text.replace(/[<>]/g, ' ');
 
 async function callProvider<T>(
   provider: Provider,

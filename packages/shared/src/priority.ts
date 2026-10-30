@@ -122,7 +122,7 @@ export function scorePriority(input: PriorityInput): PriorityResult {
       label: 'Independent reports',
       points: corroborationPoints(reportCount),
       maxPoints: WEIGHTS.corroboration,
-      detail: reportCount === 1 ? 'One report so far' : `${reportCount} reports describe this issue`,
+      detail: reportCount === 1 ? 'One report so far' : `${reportCount} independent reports describe this issue`,
     },
     sensitiveSiteFactor(input.sensitiveSites),
     {

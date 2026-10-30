@@ -1,10 +1,10 @@
-import { OPEN_STATUSES } from '@awaaz/shared';
+import { OPEN_STATUSES, type DedupeDecision } from '@awaaz/shared';
 import { analyzeReport, type Analysis } from '../ai/analyze';
 import { embedText } from '../ai/embeddings';
 import { nearbySensitiveSites, reverseGeocode } from '../ai/places';
 import { features } from '../config';
 import { db } from '../db';
-import { Prisma } from '../generated/prisma/client';
+import { Prisma, type ReportImage } from '../generated/prisma/client';
 import { neighbourhood } from '../geo';
 import { readImage } from '../reports';
 import { decideDuplicate, type CandidateIssue } from './dedupe';
@@ -55,6 +55,17 @@ function analysisColumns(analysis: Analysis) {
   };
 }
 
+/** A photo that cannot be read must never stop the report itself from reaching staff. */
+async function photoForAnalysis(image: ReportImage | null) {
+  if (!image) return undefined;
+  try {
+    return { base64: (await readImage(image)).toString('base64'), mime: image.mime };
+  } catch (error) {
+    console.error(`Analysing report ${image.reportId} without its photo`, error);
+    return undefined;
+  }
+}
+
 /** Runs outside any transaction, so that slow model calls never hold a database connection. */
 export async function processReport(reportId: string): Promise<void> {
   const report = await db.report.findUniqueOrThrow({ where: { id: reportId }, include: { image: true } });
@@ -62,7 +73,7 @@ export async function processReport(reportId: string): Promise<void> {
   const analysis = await analyzeReport({
     text: report.text,
     userCategory: report.userCategory,
-    image: report.image ? { base64: (await readImage(report.image)).toString('base64'), mime: report.image.mime } : undefined,
+    image: await photoForAnalysis(report.image),
   });
   const embedding = await embedText(analysis.englishText);
   const address = report.address ?? (await reverseGeocode(report));
@@ -111,6 +122,12 @@ export async function processReport(reportId: string): Promise<void> {
         })
       ).id;
 
+    // The issue can close while the models are working, so the record says what really happened.
+    const finalDecision: DedupeDecision =
+      mergeIntoIssueId && !target
+        ? { ...decision, decision: 'NEW_ISSUE', reason: 'The matching issue was closed before this could be linked, so it became a new issue.' }
+        : decision;
+
     await tx.report.update({
       where: { id: report.id },
       data: {
@@ -119,7 +136,7 @@ export async function processReport(reportId: string): Promise<void> {
         issueId,
         embedding: embedding.vector,
         embeddingModel: embedding.model,
-        dedupe: decision as unknown as Prisma.InputJsonValue,
+        dedupe: finalDecision as unknown as Prisma.InputJsonValue,
         aiState: 'DONE',
       },
     });

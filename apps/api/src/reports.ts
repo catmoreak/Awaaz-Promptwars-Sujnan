@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { LIMITS, type Category } from '@awaaz/shared';
+import { geocodeAddress } from './ai/places';
 import { features } from './config';
 import { db } from './db';
 import { badRequest } from './errors';
 import type { Prisma, ReportSource } from './generated/prisma/client';
-import { h3Cells, isInServiceArea } from './geo';
+import { h3Cells, isInServiceArea, type LatLng } from './geo';
 import { deleteObject, getObject, putObject } from './storage';
 
 const IMAGE_EXTENSIONS: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
@@ -53,8 +54,8 @@ export async function readImage(image: { storageKey: string | null; bytes: Uint8
 export interface NewReport {
   text: string;
   category: Category;
-  lat: number;
-  lng: number;
+  lat?: number;
+  lng?: number;
   address?: string;
   image?: { base64: string; mime: string };
   source: ReportSource;
@@ -64,9 +65,16 @@ export interface NewReport {
   clientRequestId?: string;
 }
 
+async function locate(input: NewReport): Promise<LatLng> {
+  if (input.lat !== undefined && input.lng !== undefined) return { lat: input.lat, lng: input.lng };
+  const found = input.address ? await geocodeAddress(input.address) : null;
+  if (!found) throw badRequest('address_not_found', 'That place could not be found. Drop a pin on the map or enter coordinates instead.');
+  return found;
+}
+
 /** Saves before any AI runs, so a model outage can never lose a citizen's report. */
 export async function saveReport(input: NewReport) {
-  const point = { lat: input.lat, lng: input.lng };
+  const point = await locate(input);
   if (!isInServiceArea(point)) {
     throw badRequest('outside_service_area', 'This location is outside the Moodbidri service area');
   }
@@ -78,8 +86,7 @@ export async function saveReport(input: NewReport) {
       data: {
         text: input.text,
         userCategory: input.category,
-        lat: input.lat,
-        lng: input.lng,
+        ...point,
         address: input.address || null,
         ...h3Cells(point),
         source: input.source,

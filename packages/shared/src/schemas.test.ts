@@ -1,5 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { AdminLoginSchema, PhoneSchema, RegisterSchema } from './schemas';
+import { AdminLoginSchema, CreateReportSchema, PhoneSchema, RegisterSchema, StaffReportSchema } from './schemas';
+
+describe('CreateReportSchema', () => {
+  const base = { clientRequestId: '6f1c7c1e-3f7a-4c1e-9a55-0d2f5a6b7c8d', category: 'WASTE', lat: 13.07, lng: 74.99 };
+  const photo = { base64: 'a'.repeat(32), mime: 'image/jpeg' };
+
+  it('accepts text alone, a photo alone, or both', () => {
+    expect(CreateReportSchema.safeParse({ ...base, text: 'Bin is full' }).success).toBe(true);
+    expect(CreateReportSchema.safeParse({ ...base, image: photo }).success).toBe(true);
+    expect(CreateReportSchema.safeParse({ ...base, text: 'Bin is full', image: photo }).success).toBe(true);
+  });
+
+  it('rejects a report with neither text nor a photo', () => {
+    expect(CreateReportSchema.safeParse({ ...base, text: 'hi' }).success).toBe(false);
+  });
+
+  it('accepts an address in place of a pin, but needs one of them', () => {
+    const { lat: _lat, lng: _lng, ...noPin } = base;
+    expect(CreateReportSchema.safeParse({ ...noPin, text: 'Bin is full', address: 'Near the bus stand' }).success).toBe(true);
+    expect(CreateReportSchema.safeParse({ ...noPin, text: 'Bin is full' }).success).toBe(false);
+    expect(CreateReportSchema.safeParse({ ...noPin, text: 'Bin is full', lat: 13.07 }).success).toBe(false);
+  });
+
+  it('applies the same rules to staff entries', () => {
+    expect(StaffReportSchema.safeParse({ category: 'WASTE', channel: 'PHONE', text: 'hi', lat: 13.07, lng: 74.99 }).success).toBe(false);
+    expect(StaffReportSchema.safeParse({ category: 'WASTE', channel: 'PHONE', text: 'Bin is full', address: 'Market' }).success).toBe(true);
+  });
+});
 
 describe('PhoneSchema', () => {
   it.each(['9876543210', '+919876543210', '+91 98765 43210', '09876543210', '919876543210', '98765-43210'])(

@@ -1,6 +1,6 @@
 import { SERVICE_AREA, type MapResponse, type PriorityBand } from '@awaaz/shared';
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { BAND_LABELS } from './Hexagon';
 import { Loader } from '../shared/Loader';
 import { MAPS_KEY, MAP_TYPE, useMapsAvailable } from '../shared/maps';
@@ -41,6 +41,16 @@ function MapLegend({ colors }: { colors: Record<PriorityBand, string> }) {
 /** Draws plain polygons, because a few dozen cells do not need a WebGL layer. */
 function GoogleOverlays({ data, onSelectIssue }: Omit<MapPanelProps, 'selectedIssueId'>) {
   const map = useMap();
+  const fitted = useRef(false);
+
+  // Runs once, so the 8-second refresh never moves the map while an officer is using it.
+  useEffect(() => {
+    if (!map || !data || fitted.current || data.issues.length === 0) return;
+    fitted.current = true;
+    const bounds = new google.maps.LatLngBounds({ lat: SERVICE_AREA.lat, lng: SERVICE_AREA.lng });
+    for (const { lat, lng } of data.issues) bounds.extend({ lat, lng });
+    map.fitBounds(bounds, 90);
+  }, [map, data]);
 
   useEffect(() => {
     if (!map || !data) return;
@@ -188,7 +198,6 @@ function TownMap({ data, selectedIssueId, onSelectIssue }: MapPanelProps) {
 
 export function MapPanel(props: MapPanelProps) {
   const center = { lat: SERVICE_AREA.lat, lng: SERVICE_AREA.lng };
-  const synthetic = props.data?.issues.some((issue) => issue.isSynthetic);
   const mapsAvailable = useMapsAvailable();
 
   if (mapsAvailable) {
@@ -200,7 +209,6 @@ export function MapPanel(props: MapPanelProps) {
           </Map>
         </APIProvider>
         <MapLegend colors={TOWN_COLORS} />
-        {synthetic && <p className="synthetic-flag">Synthetic demo data</p>}
       </div>
     );
   }
@@ -209,7 +217,6 @@ export function MapPanel(props: MapPanelProps) {
     <div className="map-frame map-offline">
       <TownMap {...props} />
       <MapLegend colors={TOWN_COLORS} />
-      {synthetic && <p className="synthetic-flag">Synthetic demo data</p>}
     </div>
   );
 }

@@ -12,6 +12,10 @@ describe('detectHazard', () => {
     expect(detectHazard('The contractor was fired and misfired on the work')).toBe(1);
   });
 
+  it('does not read "fell" in "fellow"', () => {
+    expect(detectHazard('Our fellow residents are unhappy with the bench')).toBe(1);
+  });
+
   it('falls back to a nuisance level', () => {
     expect(detectHazard('The paint on the bench is faded')).toBe(1);
   });
