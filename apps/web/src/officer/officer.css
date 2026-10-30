@@ -18,19 +18,6 @@
   background: var(--sidebar);
 }
 
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.brand-mark {
-  width: 22px;
-  fill: var(--accent);
-}
-
 .sidebar nav {
   display: grid;
   gap: 2px;
@@ -296,7 +283,7 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
-  box-shadow: 0 14px 40px rgb(0 0 0 / 50%);
+  box-shadow: 0 14px 40px rgb(18 48 42 / 18%);
   transform: translateX(-50%);
 }
 
@@ -308,7 +295,7 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgb(6 8 11 / 60%);
+  background: rgb(18 48 42 / 45%);
   backdrop-filter: blur(8px);
 }
 
@@ -376,8 +363,8 @@
   overflow: hidden;
 }
 
-.map-night {
-  background: #0B0E12;
+.map-offline {
+  background: var(--raised);
 }
 
 .town-map {
@@ -387,13 +374,13 @@
 }
 
 .town-cell {
-  fill: rgb(232 226 212 / 3%);
-  stroke: rgb(217 181 106 / 13%);
+  fill: rgb(18 48 42 / 3%);
+  stroke: rgb(14 107 87 / 16%);
 }
 
 .hotspot-outline {
   fill: none;
-  stroke: #ffffff;
+  stroke: var(--text);
   stroke-linejoin: round;
 }
 
@@ -405,7 +392,7 @@
   fill: #ffffff;
   font-weight: 700;
   paint-order: stroke;
-  stroke: #0F1318;
+  stroke: var(--ink);
   pointer-events: none;
 }
 
@@ -423,7 +410,7 @@
   position: absolute;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: rgb(23 28 35 / 76%);
+  background: rgb(246 249 248 / 92%);
   font-size: 0.8125rem;
   backdrop-filter: blur(14px);
 }
@@ -450,7 +437,7 @@
 }
 
 .map-legend .legend-hotspot {
-  border: 2px solid #ffffff;
+  border: 2px solid var(--text);
   background: transparent;
 }
 
@@ -655,7 +642,7 @@
   position: fixed;
   inset: 0;
   z-index: 19;
-  background: rgb(6 8 11 / 50%);
+  background: rgb(18 48 42 / 35%);
   backdrop-filter: blur(4px);
 }
 

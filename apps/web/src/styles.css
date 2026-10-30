@@ -1,24 +1,26 @@
 :root {
-  --bg: #0F1318;
-  --sidebar: rgb(232 226 212 / 4%);
-  --surface: #171C23;
-  --raised: #1F252E;
-  --line: #2E3641;
-  --text: #F4F1EA;
-  --muted: #A9B1BB;
-  --faint: #858E99;
-  --accent: #D9B56A;
-  --accent-strong: #D9B56A;
-  --accent-ink: #D9B56A;
-  --on-accent: #0F1318;
-  --critical: #E5484D;
-  --high: #F2994A;
-  --medium: #7AA7E0;
-  --low: #3FB68B;
-  --critical-text: #FF9AA2;
+  --bg: #DDE7E5;
+  --sidebar: rgb(18 48 42 / 4%);
+  --surface: #F6F9F8;
+  --raised: #E9F0EE;
+  --line: #C3D1CD;
+  --text: #12302A;
+  --muted: #42594F;
+  --faint: #4F6660;
+  --ink: #12302A;
+  --on-ink: #F1F6F4;
+  --accent: #0E6B57;
+  --accent-strong: #0A5544;
+  --accent-ink: #0A5C4B;
+  --on-accent: #FFFFFF;
+  --critical: #BF2F2C;
+  --high: #A04B00;
+  --medium: #2A67AD;
+  --low: #1B7355;
+  --critical-text: #A42724;
   --sidebar-width: 216px;
   --page-gutter: 36px;
-  color-scheme: dark;
+  color-scheme: light;
   font-family: 'Anek Kannada', 'Noto Sans Kannada', system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.45;
@@ -33,11 +35,7 @@
 
 body {
   margin: 0;
-  background:
-    radial-gradient(48rem 30rem at 92% -8%, rgb(217 181 106 / 7%), transparent 70%),
-    radial-gradient(40rem 30rem at -6% 108%, rgb(122 167 224 / 6%), transparent 70%),
-    var(--bg);
-  background-attachment: fixed;
+  background: var(--bg);
 }
 
 h1,
@@ -110,6 +108,19 @@ textarea {
   height: 1px;
   overflow: hidden;
   clip-path: inset(50%);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.brand-mark {
+  width: 22px;
+  fill: var(--accent);
 }
 
 /* Controls */
@@ -258,7 +269,7 @@ textarea {
 .loader-layer {
   position: absolute;
   inset: 0;
-  fill: #9C7F43;
+  fill: var(--accent-strong);
 }
 
 .loader-face {

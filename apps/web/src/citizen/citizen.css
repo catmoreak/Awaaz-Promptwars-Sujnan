@@ -12,7 +12,7 @@
   gap: 12px;
   padding: 12px max(16px, calc((100% - 640px) / 2));
   border-bottom: 1px solid var(--line);
-  background: rgb(15 19 24 / 86%);
+  background: rgb(221 231 229 / 90%);
   backdrop-filter: blur(16px);
 }
 
@@ -239,7 +239,7 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgb(15 19 24 / 80%);
+  background: rgb(246 249 248 / 88%);
 }
 
 .back-link {

@@ -1,43 +1,16 @@
 import { CATEGORIES, CATEGORY_LABELS, LIMITS, SERVICE_AREA, type Category, type CreateReportInput } from '@awaaz/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps';
-import {
-  Building2,
-  CloudRain,
-  Construction,
-  Droplet,
-  Ellipsis,
-  ImagePlus,
-  Lightbulb,
-  LocateFixed,
-  Mic,
-  Square,
-  Trash2,
-  Waves,
-  X,
-  Zap,
-  type LucideIcon,
-} from 'lucide-react';
+import { ImagePlus, LocateFixed, Mic, Square, X } from 'lucide-react';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { ApiError, api } from '../api';
+import { CATEGORY_ICONS } from '../shared/categories';
 import { useLanguage, type Language } from '../shared/language';
-import { DARK_MAP_STYLES, MAPS_KEY, useMapsAvailable } from '../shared/maps';
+import { MAPS_KEY, MAP_STYLES, useMapsAvailable } from '../shared/maps';
 import { useVoiceRecorder } from './useVoiceRecorder';
 import { MAX_RECORDING_MS } from './voice';
 
 const PHOTO_MAX_WIDTH = 1280;
-
-const CATEGORY_ICONS: Record<Category, LucideIcon> = {
-  WATERLOGGING: CloudRain,
-  DRAINAGE: Waves,
-  ROAD_DAMAGE: Construction,
-  WASTE: Trash2,
-  STREETLIGHT: Lightbulb,
-  WATER_SUPPLY: Droplet,
-  ELECTRICAL_HAZARD: Zap,
-  PUBLIC_SERVICE: Building2,
-  OTHER: Ellipsis,
-};
 
 interface LatLng {
   lat: number;
@@ -62,7 +35,7 @@ function PinMap({ value, onChange }: { value: LatLng | null; onChange: (value: L
         <Map
           defaultCenter={{ lat: SERVICE_AREA.lat, lng: SERVICE_AREA.lng }}
           defaultZoom={14}
-          styles={DARK_MAP_STYLES}
+          styles={MAP_STYLES}
           center={value ?? undefined}
           gestureHandling="greedy"
           clickableIcons={false}

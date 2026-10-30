@@ -1,18 +1,25 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /**
- * A stylised night model of Saavira Kambada Basadi, the Thousand Pillar Temple in Moodbidri.
+ * A stylised morning model of Saavira Kambada Basadi, the Thousand Pillar Temple in Moodbidri.
  * Proportions and features follow aerial and ground photographs of the temple, but this is
  * an artist's recreation built from code, not a survey.
  */
 
-const NIGHT = '#0F1318';
-const FRAME_SECONDS = 1 / 30;
+/** Matches --bg in styles.css, so the fog and the page are one surface and the canvas has no visible edge. */
+const MIST = '#DDE7E5';
+const FRAME_MS = 1000 / 60;
+const MAX_PIXEL_RATIO = 1.5;
+const MIN_PIXEL_RATIO = 0.75;
+/** Frames between quality checks, and the average gap that counts as too slow. */
+const QUALITY_WINDOW = 45;
+const SLOW_FRAME_MS = 26;
+/** Matches the breakpoint in home.css. Beside the text, the temple sits right of centre and runs off the page edge. */
+const STACKED_WIDTH = 960;
+const TARGET_BESIDE_TEXT = new THREE.Vector3(-8.5, 0.4, 6.6);
+const TARGET_CENTERED = new THREE.Vector3(-1, 2, 0);
 
 function canvasTexture(width: number, height: number, draw: (ctx: CanvasRenderingContext2D) => void) {
   const canvas = document.createElement('canvas');
@@ -58,11 +65,11 @@ const tileTexture = (base: string, line: string) =>
 /** Dark laterite with the wall's row of triangles along the top. */
 const wallTexture = () =>
   canvasTexture(512, 128, (ctx) => {
-    ctx.fillStyle = '#4A2E25';
+    ctx.fillStyle = '#8E5138';
     ctx.fillRect(0, 0, 512, 128);
-    ctx.fillStyle = '#6B4334';
+    ctx.fillStyle = '#A9674B';
     ctx.fillRect(0, 0, 512, 34);
-    ctx.fillStyle = '#2A1B16';
+    ctx.fillStyle = '#5E3526';
     for (let x = 0; x < 512; x += 28) {
       ctx.beginPath();
       ctx.moveTo(x, 34);
@@ -70,7 +77,7 @@ const wallTexture = () =>
       ctx.lineTo(x + 28, 34);
       ctx.fill();
     }
-    ctx.fillStyle = '#3A241D';
+    ctx.fillStyle = '#74422F';
     for (let y = 72; y < 128; y += 12) ctx.fillRect(0, y, 512, 2);
   });
 
@@ -106,8 +113,40 @@ function mesh(geometry: THREE.BufferGeometry, material: THREE.Material, x = 0, y
   return item;
 }
 
-export default function TempleScene({ onReady }: { onReady?: () => void }) {
+/** The temple never moves, so meshes sharing a material become one, which turns 130 draw calls into about 20. */
+function mergeByMaterial(group: THREE.Group) {
+  group.updateMatrixWorld(true);
+  const batches = new Map<THREE.Material, { geometries: THREE.BufferGeometry[]; castShadow: boolean }>();
+  const instanced: THREE.InstancedMesh[] = [];
+  group.traverse((object) => {
+    if (object instanceof THREE.InstancedMesh) instanced.push(object);
+    else if (object instanceof THREE.Mesh) {
+      const material = object.material as THREE.Material;
+      const batch = batches.get(material) ?? { geometries: [], castShadow: object.castShadow };
+      const flat = object.geometry.index ? object.geometry.toNonIndexed() : object.geometry.clone();
+      batch.geometries.push(flat.applyMatrix4(object.matrixWorld));
+      object.geometry.dispose();
+      batches.set(material, batch);
+    }
+  });
+  group.clear();
+  batches.forEach(({ geometries, castShadow }, material) => {
+    const merged = mergeGeometries(geometries);
+    geometries.forEach((geometry) => geometry.dispose());
+    group.add(mesh(merged, material, 0, 0, 0, castShadow));
+  });
+  group.add(...instanced);
+}
+
+export default function TempleScene({ onReady, paused = false }: { onReady?: () => void; paused?: boolean }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(paused);
+  const syncRef = useRef<() => void>(() => undefined);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+    syncRef.current();
+  }, [paused]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -122,36 +161,32 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
     }
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    let pixelRatio = Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
+    renderer.setPixelRatio(pixelRatio);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
     host.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(NIGHT);
-    scene.fog = new THREE.Fog(NIGHT, 62, 118);
+    scene.background = new THREE.Color(MIST);
+    scene.fog = new THREE.Fog(MIST, 68, 132);
 
     const camera = new THREE.PerspectiveCamera(27, 1, 0.5, 220);
-    const target = new THREE.Vector3(-1, 4.2, 0);
+    const target = TARGET_CENTERED.clone();
 
-    scene.add(new THREE.HemisphereLight('#A9B8D0', '#0B0E12', 0.72));
-    const moon = new THREE.DirectionalLight('#DCEBFF', 2.1);
-    moon.position.set(26, 38, 30);
-    moon.castShadow = true;
-    moon.shadow.mapSize.set(2048, 2048);
-    moon.shadow.camera.left = -40;
-    moon.shadow.camera.right = 40;
-    moon.shadow.camera.top = 40;
-    moon.shadow.camera.bottom = -40;
-    moon.shadow.camera.far = 120;
-    moon.shadow.bias = -0.0003;
-    moon.shadow.normalBias = 0.04;
-    scene.add(moon);
-    const warmRim = new THREE.DirectionalLight('#E9CC8C', 0.8);
-    warmRim.position.set(-30, 14, -18);
-    scene.add(warmRim);
+    scene.add(new THREE.HemisphereLight('#F4FAF8', '#8F9C86', 2));
+    const sun = new THREE.DirectionalLight('#FFF1DC', 1.9);
+    sun.position.set(26, 38, 30);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -40;
+    sun.shadow.camera.right = 40;
+    sun.shadow.camera.top = 40;
+    sun.shadow.camera.bottom = -40;
+    sun.shadow.camera.far = 120;
+    sun.shadow.bias = -0.0003;
+    sun.shadow.normalBias = 0.04;
+    scene.add(sun);
 
     const textures: THREE.Texture[] = [];
     const track = <T extends THREE.Texture>(texture: T) => {
@@ -159,18 +194,19 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
       return texture;
     };
 
-    const stone = new THREE.MeshStandardMaterial({ color: '#A9B3AB', roughness: 0.85 });
-    const darkStone = new THREE.MeshStandardMaterial({ color: '#4C5550', roughness: 0.9 });
-    const white = new THREE.MeshStandardMaterial({ color: '#E8EDE6', roughness: 0.75 });
-    const red = new THREE.MeshStandardMaterial({ color: '#B23C2C', roughness: 0.6 });
-    const brass = new THREE.MeshStandardMaterial({ color: '#D8C27A', roughness: 0.3, metalness: 0.7 });
-    const glow = new THREE.MeshStandardMaterial({ color: '#2A1F14', emissive: '#FFC47A', emissiveIntensity: 1.1 });
-    const slabs = new THREE.MeshStandardMaterial({ map: track(slabTexture()), roughness: 0.82, side: THREE.DoubleSide });
-    const tiles = new THREE.MeshStandardMaterial({ map: track(tileTexture('#7E4A3E', '#4C2A23')), roughness: 0.8, side: THREE.DoubleSide });
-    const greyRoof = new THREE.MeshStandardMaterial({ map: track(tileTexture('#8E9A8A', '#68746A')), roughness: 0.8, side: THREE.DoubleSide });
-    const eaveRoof = new THREE.MeshStandardMaterial({ map: track(tileTexture('#3F3A33', '#28241F')), roughness: 0.9, side: THREE.DoubleSide });
-    const wall = new THREE.MeshStandardMaterial({ map: track(wallTexture()), roughness: 0.95 });
-    const lampLine = new THREE.MeshStandardMaterial({ color: '#D9B56A', emissive: '#D9B56A', emissiveIntensity: 1.5 });
+    // Lambert shading is far cheaper per pixel than PBR, and soft morning light has no sharp highlights to lose.
+    const stone = new THREE.MeshLambertMaterial({ color: '#B4BCB3' });
+    const darkStone = new THREE.MeshLambertMaterial({ color: '#6B736C' });
+    const white = new THREE.MeshLambertMaterial({ color: '#EEF1EA' });
+    const red = new THREE.MeshLambertMaterial({ color: '#A83A2A' });
+    const brass = new THREE.MeshLambertMaterial({ color: '#C9A94F' });
+    const shade = new THREE.MeshLambertMaterial({ color: '#4A3A2C' });
+    const slabs = new THREE.MeshLambertMaterial({ map: track(slabTexture()), side: THREE.DoubleSide });
+    const tiles = new THREE.MeshLambertMaterial({ map: track(tileTexture('#8C4E40', '#5A3128')), side: THREE.DoubleSide });
+    const greyRoof = new THREE.MeshLambertMaterial({ map: track(tileTexture('#8E9A8A', '#68746A')), side: THREE.DoubleSide });
+    const eaveRoof = new THREE.MeshLambertMaterial({ map: track(tileTexture('#4A443C', '#322D27')), side: THREE.DoubleSide });
+    const wall = new THREE.MeshLambertMaterial({ map: track(wallTexture()) });
+    const coping = new THREE.MeshLambertMaterial({ color: '#D6D2C2' });
 
     const model = new THREE.Group();
     scene.add(model);
@@ -210,7 +246,7 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
       inner.lineTo(0, height * 0.82);
       inner.lineTo(width * 0.4, 0.1);
       inner.closePath();
-      const panel = mesh(new THREE.ExtrudeGeometry(inner, { depth: 0.04, bevelEnabled: false }), glow, 0, 0, 0.13, false);
+      const panel = mesh(new THREE.ExtrudeGeometry(inner, { depth: 0.04, bevelEnabled: false }), shade, 0, 0, 0.13, false);
       group.add(panel);
       for (const offset of [-0.22, 0, 0.22]) {
         group.add(mesh(new THREE.BoxGeometry(0.07, height * 0.75, 0.05), red, width * offset, height * 0.37, 0.18));
@@ -225,16 +261,16 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
 
     const turret = (x: number, y: number, z: number) => {
       model.add(mesh(new THREE.BoxGeometry(1.5, 0.74, 1.5), white, x, y + 0.37, z));
-      model.add(mesh(new THREE.BoxGeometry(0.52, 0.4, 0.04), glow, x, y + 0.38, z + 0.77, false));
+      model.add(mesh(new THREE.BoxGeometry(0.52, 0.4, 0.04), shade, x, y + 0.38, z + 0.77, false));
       model.add(mesh(new THREE.BoxGeometry(1.62, 0.09, 1.62), red, x, y + 0.76, z));
       model.add(mesh(slopedRoof(2.1, 2.1, 0.02, 0.02, 1, 0.9), tiles, x, y + 0.8, z));
       finial(x, y + 1.76, z, 0.45);
     };
 
     // Compound
-    const courtyard = mesh(new THREE.BoxGeometry(30, 0.3, 54), new THREE.MeshStandardMaterial({ color: '#23221F', roughness: 1 }), 0, -0.15, 2);
+    const courtyard = mesh(new THREE.BoxGeometry(30, 0.3, 54), new THREE.MeshLambertMaterial({ color: '#CBC9B9' }), 0, -0.15, 2);
     model.add(courtyard);
-    model.add(mesh(new THREE.BoxGeometry(11, 0.1, 15), new THREE.MeshStandardMaterial({ color: '#3A3F3A', roughness: 0.95 }), 3, 0.04, 19.5));
+    model.add(mesh(new THREE.BoxGeometry(11, 0.1, 15), new THREE.MeshLambertMaterial({ color: '#DAD8CB' }), 3, 0.04, 19.5));
 
     const wallPiece = (width: number, depth: number, x: number, z: number, repeat: number) => {
       const material = wall.clone();
@@ -250,7 +286,7 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
     wallPiece(11, 0.8, -9.5, 29, 3);
 
     const trace = (width: number, depth: number, x: number, y: number, z: number) => {
-      model.add(mesh(new THREE.BoxGeometry(width, 0.06, depth), lampLine, x, y, z, false));
+      model.add(mesh(new THREE.BoxGeometry(width, 0.06, depth), coping, x, y, z, false));
     };
     trace(30.9, 0.1, 0, 3.03, -25);
     trace(0.1, 54, -15.4, 3.03, 2);
@@ -269,9 +305,9 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
     model.add(mesh(new THREE.BoxGeometry(4.4, 0.25, 1.6), stone, 0, 0.12, 17));
 
     // Lit inner halls, seen between the pillars.
-    model.add(mesh(new THREE.BoxGeometry(8.8, 1.7, 6.8), glow, 0, 1.35, 11, false));
-    model.add(mesh(new THREE.BoxGeometry(5.8, 1.7, 21), glow, 0, 1.35, -3, false));
-    model.add(mesh(new THREE.BoxGeometry(8.6, 1.7, 6.6), glow, 0, 1.35, -14.5, false));
+    model.add(mesh(new THREE.BoxGeometry(8.8, 1.7, 6.8), shade, 0, 1.35, 11, false));
+    model.add(mesh(new THREE.BoxGeometry(5.8, 1.7, 21), shade, 0, 1.35, -3, false));
+    model.add(mesh(new THREE.BoxGeometry(8.6, 1.7, 6.6), shade, 0, 1.35, -14.5, false));
 
     // Pillars: a square block, a turned shaft and a bracket, as in the temple's halls.
     const pillarSpots: [number, number][] = [];
@@ -332,7 +368,7 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
     skirt(12.2, 10.6, 8.2, 6.8, 2.58, 1.85, -14.5);
     model.add(mesh(slopedRoof(9, 7.6, 6.6, 5.2, 1.5, 1.3), tiles, 0, 4.5, -14.5));
     band(5.8, 4.4, 5.98, 0.9, -14.5);
-    model.add(mesh(new THREE.BoxGeometry(3, 0.5, 0.04), glow, 0, 6.5, -12.28, false));
+    model.add(mesh(new THREE.BoxGeometry(3, 0.5, 0.04), shade, 0, 6.5, -12.28, false));
     model.add(mesh(slopedRoof(7.6, 6.2, 1.7, 0.02, 2.6, 1.3), tiles, 0, 6.94, -14.5));
     gable(2.5, 1.3, 0, 6.94, -11.7, 0);
     finial(0, 9.48, -14.5, 1);
@@ -368,20 +404,14 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
       model.add(mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.92, 8), stone, pillarX + dx, capitalY + 1, pillarZ + dz));
       finial(pillarX + dx * 1.18, capitalY + 1.56, pillarZ + dz * 1.18, 0.34);
     }
-    model.add(mesh(new THREE.BoxGeometry(0.72, 0.86, 0.72), lampLine, pillarX, capitalY + 1, pillarZ, false));
+    model.add(mesh(new THREE.BoxGeometry(0.72, 0.86, 0.72), coping, pillarX, capitalY + 1, pillarZ, false));
     model.add(mesh(new THREE.BoxGeometry(1.9, 0.14, 1.9), stone, pillarX, capitalY + 1.5, pillarZ));
     model.add(mesh(slopedRoof(1.7, 1.7, 0.34, 0.34, 0.86, 1), stone, pillarX, capitalY + 1.57, pillarZ));
     finial(pillarX, capitalY + 2.4, pillarZ, 1.05);
-    const beacon = new THREE.PointLight('#D9B56A', 16, 10, 1.8);
-    beacon.position.set(pillarX, capitalY + 1, pillarZ);
-    scene.add(beacon);
-    const baseGlow = new THREE.PointLight('#D9B56A', 7, 7, 1.8);
-    baseGlow.position.set(pillarX, 3.2, pillarZ + 2.4);
-    scene.add(baseGlow);
 
     // Flagpole beside the pillar
     model.add(mesh(new THREE.BoxGeometry(1.2, 0.6, 1.2), darkStone, 3.1, 0.39, 20.8));
-    const poleMaterial = new THREE.MeshStandardMaterial({ color: '#59402E', roughness: 0.6 });
+    const poleMaterial = new THREE.MeshLambertMaterial({ color: '#6B4C36' });
     model.add(mesh(new THREE.CylinderGeometry(0.09, 0.15, 8.6, 10), poleMaterial, 3.1, 4.9, 20.8));
     for (let index = 0; index < 5; index++) {
       model.add(mesh(new THREE.BoxGeometry(0.42 - index * 0.04, 0.06, 0.14), brass, 3.1, 7 + index * 0.45, 20.8));
@@ -403,10 +433,10 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
     }
     const trunkMesh = new THREE.InstancedMesh(
       new THREE.CylinderGeometry(0.13, 0.22, 1, 6),
-      new THREE.MeshStandardMaterial({ color: '#2E2B24', roughness: 0.95 }),
+      new THREE.MeshLambertMaterial({ color: '#7A6A58' }),
       palmSpots.length,
     );
-    const frondGeometry = new THREE.PlaneGeometry(3.4, 0.62, 10, 1);
+    const frondGeometry = new THREE.PlaneGeometry(3.4, 0.62, 5, 1);
     frondGeometry.translate(1.7, 0, 0);
     const frondShape = frondGeometry.attributes.position as THREE.BufferAttribute;
     for (let index = 0; index < frondShape.count; index++) {
@@ -418,7 +448,7 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
     const frondCount = 14;
     const frondMesh = new THREE.InstancedMesh(
       frondGeometry,
-      new THREE.MeshStandardMaterial({ color: '#2C4A3A', roughness: 0.75, side: THREE.DoubleSide }),
+      new THREE.MeshLambertMaterial({ color: '#4C8A62', side: THREE.DoubleSide }),
       palmSpots.length * frondCount,
     );
     const helper = new THREE.Object3D();
@@ -443,90 +473,128 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
     frondMesh.castShadow = true;
     scene.add(trunkMesh, frondMesh);
 
-    const land = mesh(new THREE.CircleGeometry(170, 48), new THREE.MeshStandardMaterial({ color: '#12171D', roughness: 1 }), 0, -0.32, 0, false);
+    const land = mesh(new THREE.CircleGeometry(170, 48), new THREE.ShadowMaterial({ color: '#2F4A42', opacity: 0.2 }), 0, -0.32, 0, false);
     land.rotation.x = -Math.PI / 2;
     scene.add(land);
 
-    // Warm light spilling out of the halls.
-    for (const [x, y, z, power] of [[0, 2, 13.5, 26], [7, 1.4, 1, 18], [-7, 1.4, 1, 18], [0, 2, -19.5, 22]] as const) {
-      const lamp = new THREE.PointLight('#FFC988', power, 16, 1.8);
-      lamp.position.set(x, y, z);
-      scene.add(lamp);
-    }
+    mergeByMaterial(model);
 
-    const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { samples: 2, type: THREE.HalfFloatType }));
-    composer.addPass(new RenderPass(scene, camera));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.2, 0.42, 0.9);
-    composer.addPass(bloom);
-    composer.addPass(new OutputPass());
-
-    const resize = () => {
-      const { clientWidth: width, clientHeight: height } = host;
-      if (width === 0 || height === 0) return;
-      renderer.setSize(width, height);
-      composer.setSize(width, height);
-      camera.aspect = width / height;
-      const wide = camera.aspect > 1.1;
-      camera.fov = wide ? 27 : 38;
-      // Moves the temple to the right of the headline on wide screens.
-      if (wide) camera.setViewOffset(width, height, -width * 0.2, height * 0.03, width, height);
-      else camera.clearViewOffset();
-      camera.updateProjectionMatrix();
-      composer.render();
-    };
-    const observer = new ResizeObserver(resize);
-    observer.observe(host);
-    resize();
+    let elapsed = 0;
+    let frame = 0;
+    let running = false;
+    let started = false;
+    let cancelled = false;
+    let lastDraw = 0;
+    let onScreen = true;
+    let windowFrames = 0;
+    let windowMs = 0;
 
     const pointer = { x: 0, y: 0 };
     const eased = { x: 0, y: 0 };
-    const onPointerMove = (event: PointerEvent) => {
-      pointer.x = event.clientX / window.innerWidth - 0.5;
-      pointer.y = event.clientY / window.innerHeight - 0.5;
-    };
-    window.addEventListener('pointermove', onPointerMove);
 
-    const startedAt = performance.now();
-    let frame = 0;
-    let announced = false;
-    let lastDraw = 0;
-
-    const place = (elapsed: number) => {
-      eased.x += (pointer.x - eased.x) * 0.04;
-      eased.y += (pointer.y - eased.y) * 0.04;
+    const place = (gap: number) => {
+      const ease = 1 - Math.exp(-gap * 0.0025);
+      eased.x += (pointer.x - eased.x) * ease;
+      eased.y += (pointer.y - eased.y) * ease;
       const angle = 0.72 + Math.sin(elapsed * 0.08) * 0.1 + eased.x * 0.16;
       const radius = 66;
       camera.position.set(Math.sin(angle) * radius, 25 - eased.y * 4, Math.cos(angle) * radius);
       camera.lookAt(target);
     };
 
-    const render = () => {
-      frame = requestAnimationFrame(render);
-      const elapsed = (performance.now() - startedAt) / 1000;
-      if (elapsed - lastDraw < FRAME_SECONDS) return;
-      lastDraw = elapsed;
-      place(elapsed);
-      composer.render();
-      // Nothing in the scene moves, so one shadow pass is enough and the camera does the rest.
-      renderer.shadowMap.autoUpdate = false;
-      if (!announced) {
-        announced = true;
-        onReady?.();
-      }
+    const resize = () => {
+      const { clientWidth: width, clientHeight: height } = host;
+      if (width === 0 || height === 0) return;
+      renderer.setSize(width, height);
+      camera.aspect = width / height;
+      camera.fov = camera.aspect > 1.1 ? 34 : 40;
+      camera.updateProjectionMatrix();
+      target.copy(window.innerWidth > STACKED_WIDTH ? TARGET_BESIDE_TEXT : TARGET_CENTERED);
+      place(0);
+      if (started) renderer.render(scene, camera);
     };
 
-    if (reducedMotion) {
+    /** Lowers resolution on slow graphics hardware rather than letting the frame rate drop. */
+    const watchQuality = (gap: number) => {
+      windowFrames += 1;
+      windowMs += gap;
+      if (windowFrames < QUALITY_WINDOW) return;
+      if (windowMs / windowFrames > SLOW_FRAME_MS && pixelRatio > MIN_PIXEL_RATIO) {
+        pixelRatio = Math.max(MIN_PIXEL_RATIO, pixelRatio - 0.25);
+        renderer.setPixelRatio(pixelRatio);
+        resize();
+      }
+      windowFrames = 0;
+      windowMs = 0;
+    };
+
+    const loop = (now: number) => {
+      frame = requestAnimationFrame(loop);
+      const gap = now - lastDraw;
+      // The small margin keeps a 60 Hz screen from skipping every other frame.
+      if (gap < FRAME_MS - 2) return;
+      lastDraw = now;
+      elapsed += gap / 1000;
+      place(gap);
+      renderer.render(scene, camera);
+      watchQuality(gap);
+    };
+
+    /** The scene only draws while someone can see it, which also leaves the page free to scroll smoothly. */
+    const sync = () => {
+      const shouldRun = started && !reducedMotion && onScreen && !document.hidden && !pausedRef.current;
+      if (shouldRun === running) return;
+      running = shouldRun;
+      if (shouldRun) {
+        lastDraw = performance.now();
+        windowFrames = 0;
+        windowMs = 0;
+        frame = requestAnimationFrame(loop);
+      } else {
+        cancelAnimationFrame(frame);
+      }
+    };
+    syncRef.current = sync;
+
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(host);
+    resize();
+
+    const onPointerMove = (event: PointerEvent) => {
+      pointer.x = event.clientX / window.innerWidth - 0.5;
+      pointer.y = event.clientY / window.innerHeight - 0.5;
+    };
+    window.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('visibilitychange', sync);
+
+    const visibility = new IntersectionObserver(([entry]) => {
+      onScreen = entry?.isIntersecting ?? true;
+      sync();
+    });
+    visibility.observe(host);
+
+    // Shaders compile off the main thread where the browser allows it, so the page never freezes on load.
+    const begin = async () => {
       place(0);
-      composer.render();
+      await renderer.compileAsync(scene, camera).catch(() => undefined);
+      if (cancelled) return;
+      renderer.render(scene, camera);
+      // Nothing in the scene moves, so one shadow pass is enough and the camera does the rest.
+      renderer.shadowMap.autoUpdate = false;
+      started = true;
       onReady?.();
-    } else {
-      render();
-    }
+      sync();
+    };
+    void begin();
 
     return () => {
+      cancelled = true;
+      syncRef.current = () => undefined;
       cancelAnimationFrame(frame);
-      observer.disconnect();
+      resizeObserver.disconnect();
+      visibility.disconnect();
       window.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('visibilitychange', sync);
       textures.forEach((texture) => texture.dispose());
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh) {
@@ -534,7 +602,6 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
           (Array.isArray(object.material) ? object.material : [object.material]).forEach((item) => item.dispose());
         }
       });
-      composer.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };

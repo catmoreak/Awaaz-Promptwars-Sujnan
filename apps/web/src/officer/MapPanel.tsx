@@ -3,16 +3,16 @@ import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import { useEffect, useMemo } from 'react';
 import { BAND_LABELS } from './Hexagon';
 import { Loader } from '../shared/Loader';
-import { DARK_MAP_STYLES, MAPS_KEY, useMapsAvailable } from '../shared/maps';
+import { MAPS_KEY, MAP_STYLES, useMapsAvailable } from '../shared/maps';
 
 const BANDS = Object.keys(BAND_LABELS) as PriorityBand[];
 
 /** Checked for colour-blind separation against the dark map. */
 const TOWN_COLORS: Record<PriorityBand, string> = {
-  CRITICAL: '#E5484D',
-  HIGH: '#F2994A',
-  MEDIUM: '#7AA7E0',
-  LOW: '#3FB68B',
+  CRITICAL: '#BF2F2C',
+  HIGH: '#A04B00',
+  MEDIUM: '#2A67AD',
+  LOW: '#1B7355',
 };
 
 interface MapPanelProps {
@@ -66,7 +66,7 @@ function GoogleOverlays({ data, onSelectIssue }: Omit<MapPanelProps, 'selectedIs
           new google.maps.Polyline({
             map,
             path: [...boundary, boundary[0] as google.maps.LatLngLiteral],
-            strokeColor: '#FFFFFF',
+            strokeColor: '#12302A',
             strokeWeight: 2,
           }),
         );
@@ -80,7 +80,7 @@ function GoogleOverlays({ data, onSelectIssue }: Omit<MapPanelProps, 'selectedIs
         radius: 28,
         fillColor: TOWN_COLORS[issue.priority.band],
         fillOpacity: 1,
-        strokeColor: '#0F1318',
+        strokeColor: '#FFFFFF',
         strokeWeight: 2,
         clickable: true,
       });
@@ -153,8 +153,8 @@ function TownMap({ data, selectedIssueId, onSelectIssue }: MapPanelProps) {
             cx={view.x(issue.lng)}
             cy={view.y(issue.lat)}
             r={view.unit * (selected ? 10 : 3.5)}
-            fill={selected ? '#FFFFFF' : '#0F1318'}
-            stroke={selected ? '#0F1318' : '#FFFFFF'}
+            fill={selected ? '#FFFFFF' : '#12302A'}
+            stroke={selected ? '#12302A' : '#FFFFFF'}
             strokeWidth={view.unit * (selected ? 3.5 : 1.5)}
             onClick={() => onSelectIssue(issue.id)}
           >
@@ -195,7 +195,7 @@ export function MapPanel(props: MapPanelProps) {
     return (
       <div className="map-frame">
         <APIProvider apiKey={MAPS_KEY as string}>
-          <Map defaultCenter={center} defaultZoom={14} styles={DARK_MAP_STYLES} gestureHandling="greedy" clickableIcons={false} disableDefaultUI>
+          <Map defaultCenter={center} defaultZoom={14} styles={MAP_STYLES} gestureHandling="greedy" clickableIcons={false} disableDefaultUI>
             <GoogleOverlays data={props.data} onSelectIssue={props.onSelectIssue} />
           </Map>
         </APIProvider>
@@ -206,7 +206,7 @@ export function MapPanel(props: MapPanelProps) {
   }
 
   return (
-    <div className="map-frame map-night">
+    <div className="map-frame map-offline">
       <TownMap {...props} />
       <MapLegend colors={TOWN_COLORS} />
       {synthetic && <p className="synthetic-flag">Synthetic demo data</p>}

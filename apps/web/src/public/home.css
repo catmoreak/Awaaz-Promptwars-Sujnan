@@ -1,60 +1,54 @@
+/* Every rule starts at .home or a home-only class, because this sheet loads for the whole site. */
 .home {
-  --night: #0F1318;
-  --frost: rgb(232 226 212 / 8%);
-  --frost-strong: rgb(23 28 35 / 72%);
-  --edge: rgb(232 226 212 / 16%);
-  --text: #F4F1EA;
-  --soft: #A9B1BB;
-  --gold: #D9B56A;
-  --gold-strong: #E9CC8C;
-  position: fixed;
-  inset: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  background: var(--night);
+  --home-gutter: clamp(16px, 5vw, 64px);
+  --home-width: 1180px;
+  --home-edge: max(var(--home-gutter), calc((100% - var(--home-width)) / 2));
+  --footer-soft: #B7CCC5;
+  --footer-line: rgb(221 231 229 / 18%);
+  background: var(--bg);
   color: var(--text);
-  font-family: 'Noto Sans Kannada', system-ui, sans-serif;
-  font-size: 18px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
-.home *,
-.home *::before,
-.home *::after {
-  box-sizing: border-box;
+html:has(.home) {
+  scroll-behavior: smooth;
 }
 
-.hero-copy h1,
-.step h2,
-.home p {
-  margin: 0;
-}
-
-:where(.home) button {
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-
-.home :focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 3px;
-}
-
-/* Hero */
-.hero {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto 1fr auto;
-  min-height: 100dvh;
+html:has(.auth-dialog[open]) {
   overflow: hidden;
 }
 
-.hero-scene,
-.hero-veil {
+/* Headings are set slightly narrow, using the width axis of the typeface. */
+.home h1,
+.home h2,
+.home h3,
+.home-brand {
+  font-stretch: 90%;
+}
+
+.home a {
+  color: inherit;
+}
+
+.home .button {
+  min-height: 48px;
+  padding: 9px 22px;
+  border-radius: 8px;
+}
+
+/* Hero */
+.home-hero {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: clamp(560px, 84dvh, 780px);
+  overflow: hidden;
+}
+
+/* The canvas only covers the part of the hero the temple needs, so there are fewer pixels to draw. */
+.home-scene {
   position: absolute;
-  inset: 0;
+  inset: 0 0 0 26%;
 }
 
 .temple-scene {
@@ -64,337 +58,729 @@
 
 .temple-scene canvas {
   display: block;
+  opacity: 0;
+  transition: opacity 900ms ease-out;
 }
 
-/* Keeps text readable and lets the scene sink into the page below. */
-.hero-veil {
+.scene-ready .temple-scene canvas {
+  opacity: 1;
+}
+
+/* The ground is already the page colour, so only the palms and walls need easing out at the sides. */
+.home-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   background:
-    linear-gradient(90deg, rgb(15 19 24 / 86%) 0%, rgb(15 19 24 / 42%) 34%, transparent 58%),
-    linear-gradient(0deg, var(--night) 0%, transparent 22%);
+    linear-gradient(90deg, var(--bg) 3%, rgb(221 231 229 / 72%) 15%, rgb(221 231 229 / 30%) 27%, transparent 40%),
+    linear-gradient(180deg, var(--bg) 0%, transparent 16%);
   pointer-events: none;
 }
 
-.nav {
+/* Hides where the canvas ends: the temple rises out of cloud that becomes the section below. */
+.home-clouds {
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  width: max(100%, 1200px);
+  color: var(--surface);
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.cloud-bank {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.home-header {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 26px clamp(20px, 5vw, 76px);
+  padding: 18px var(--home-edge);
 }
 
 .home-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-weight: 700;
-  font-size: 1.5rem;
-}
-
-.home-brand svg {
-  width: 24px;
-  fill: var(--gold);
-}
-
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border: 1px solid var(--edge);
-  border-radius: 999px;
-  background: var(--frost);
-  backdrop-filter: blur(18px) saturate(1.3);
-}
-
-.link {
-  padding: 8px 14px;
-  border: 0;
-  background: none;
-  color: var(--text);
-  font-weight: 500;
-  font-size: 1rem;
+  gap: 8px;
+  font-size: 1.3125rem;
+  font-weight: 650;
   text-decoration: none;
 }
 
-.link:hover {
-  color: var(--gold);
+/* Anek's letters sit high in the line box, so the mark is nudged up to meet them. */
+.home-brand svg {
+  width: 19px;
+  fill: var(--accent);
+  translate: 0 -2px;
 }
 
-.hero-copy {
+.home-nav,
+.home-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.home-link {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.home-link:hover {
+  background: rgb(18 48 42 / 8%);
+}
+
+.home-intro {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   display: grid;
   align-content: center;
-  gap: 22px;
-  min-width: 0;
-  max-width: 40rem;
-  padding: 0 clamp(20px, 5vw, 76px);
+  justify-items: start;
+  gap: 14px;
+  max-width: calc(var(--home-edge) + 460px);
+  padding: 0 0 96px var(--home-edge);
 }
 
-.hero-copy h1 {
-  font-weight: 700;
-  font-size: clamp(3.2rem, 7.4vw, 6.6rem);
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  line-height: 1.04;
+.home-intro h1 {
+  font-size: clamp(2.125rem, 1.7rem + 1.5vw, 2.875rem);
+  font-weight: 620;
+  line-height: 1.12;
+  text-wrap: balance;
 }
 
-.hero-copy h1 span {
-  display: block;
+.home-intro p {
+  max-width: 34rem;
+  color: var(--muted);
+  font-size: 1.125rem;
 }
 
-.hero-copy h1 span:last-child {
-  color: var(--gold);
-}
-
-.hero-copy > p {
-  color: var(--soft);
-  font-size: 1.25rem;
-}
-
-.hero-actions {
+.home-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 4px;
+  gap: 10px;
+  margin-top: 10px;
 }
 
-.button {
-  min-height: 56px;
-  padding: 12px 28px;
-  border: 1px solid var(--edge);
-  border-radius: 999px;
-  background: var(--frost);
-  color: var(--text);
-  font-weight: 600;
-  font-size: 1.0625rem;
-  white-space: nowrap;
-  backdrop-filter: blur(18px) saturate(1.3);
+/* Content */
+.home main {
+  background: var(--surface);
 }
 
-.button:hover {
-  border-color: var(--gold);
-}
-
-.home .button-primary {
-  border-color: var(--gold);
-  background: var(--gold);
-  color: var(--night);
-}
-
-.home .button-primary:hover {
-  border-color: var(--gold-strong);
-  background: var(--gold-strong);
-}
-
-.hero-caption {
-  position: relative;
-  z-index: 2;
-  justify-self: end;
-  padding: 0 clamp(20px, 5vw, 76px) 20px;
-  color: var(--soft);
-  font-size: 0.8125rem;
-}
-
-/* The form scrolls inside its panel, so the page and the temple never resize. */
-.hero-form {
-  height: 100dvh;
-  min-height: 0;
-}
-
-/* Sign-in over the temple */
-.form-stage {
-  position: relative;
-  z-index: 2;
+.home-section {
   display: grid;
-  align-items: center;
-  min-width: 0;
-  padding: 8px clamp(20px, 5vw, 76px);
+  gap: 28px;
+  padding: 64px var(--home-edge);
 }
 
-.frost-panel {
-  width: min(460px, 100%);
-  max-height: calc(100dvh - 150px);
-  padding: 28px;
-  border: 1px solid var(--edge);
-  border-radius: 24px;
-  background: var(--frost-strong);
-  box-shadow: 0 30px 80px rgb(0 0 0 / 45%);
-  overflow-y: auto;
-  backdrop-filter: blur(26px) saturate(1.4);
+.home-section + .home-section {
+  border-top: 1px solid var(--line);
 }
 
-/* Steps */
-.steps {
+.home-section h2 {
+  font-size: 1.625rem;
+  font-weight: 620;
+}
+
+.home-section h3 {
+  font-size: 1.0625rem;
+  font-weight: 620;
+}
+
+.home-section p {
+  color: var(--muted);
+}
+
+.home-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  padding: 8px clamp(20px, 5vw, 76px) 44px;
+  gap: 32px;
 }
 
-.step {
+.home-steps li {
   display: grid;
-  gap: 2px;
-  padding: 24px;
-  border: 1px solid var(--edge);
-  border-radius: 20px;
-  background: var(--frost);
+  align-content: start;
+  gap: 6px;
 }
 
-.step h2 {
-  margin-top: 12px;
-  font-weight: 700;
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.2;
+.home-step-number {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 6px;
+  padding-top: 2px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.9375rem;
+  font-weight: 650;
+  line-height: 1;
 }
 
-.step p {
-  color: var(--soft);
+.home-split {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 32px;
+}
+
+.home-split > div {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.home-categories {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 32px;
+}
+
+.home-categories li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-weight: 500;
+}
+
+.home-categories svg {
+  flex: none;
+  color: var(--accent-ink);
+}
+
+.home-points {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+}
+
+.home-points > div {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+/* The same five stages a citizen sees on their report. */
+.home-track {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  margin-top: 8px;
+}
+
+.home-track li {
+  position: relative;
+  padding-top: 20px;
+  padding-right: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.home-track li::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+.home-track li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.home-track li:last-child::before {
+  display: none;
 }
 
 /* Footer */
-.footer {
+.home-footer {
+  padding: 48px var(--home-edge) 24px;
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.home-footer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+  gap: 32px;
+  padding-bottom: 36px;
+}
+
+.home-footer h2 {
+  margin-bottom: 10px;
+  color: var(--footer-soft);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.home-footer p {
+  color: var(--footer-soft);
+  font-size: 0.9375rem;
+}
+
+.home-footer ul {
+  display: grid;
+  gap: 6px;
+}
+
+.home-footer li a,
+.home-footer li button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.9375rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.home-footer li a:hover,
+.home-footer li button:hover {
+  text-decoration: underline;
+}
+
+.home-footer-about {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  max-width: 19rem;
+}
+
+.home-footer .home-brand svg {
+  fill: var(--on-ink);
+}
+
+.home-emergency {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 1.25rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.home-emergency:hover {
+  text-decoration: underline;
+}
+
+.home-footer-base {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px 24px;
-  padding: 18px clamp(20px, 5vw, 76px) 26px;
-  border-top: 1px solid var(--edge);
-  color: var(--soft);
-  font-size: 0.875rem;
+  padding-top: 16px;
+  border-top: 1px solid var(--footer-line);
 }
 
-.footer .link {
-  padding: 4px 0;
-  font-size: 0.9375rem;
+.home-footer-base .home-link {
+  margin-right: -12px;
 }
 
-@media (max-width: 960px) {
-  .hero {
-    min-height: 100dvh;
-  }
-
-  .hero-veil {
-    background: linear-gradient(0deg, var(--night) 8%, rgb(15 19 24 / 72%) 42%, rgb(15 19 24 / 12%) 72%);
-  }
-
-  .hero-copy {
-    align-content: end;
-    padding-bottom: 12px;
-  }
-
-  .form-stage {
-    align-items: end;
-    padding-bottom: 16px;
-  }
-
-  .frost-panel {
-    width: 100%;
-    padding: 22px;
-  }
-
-  .hero-caption {
-    justify-self: start;
-    padding-bottom: 14px;
-  }
-
-  .steps {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .step {
-    grid-template-columns: 26px minmax(0, 1fr);
-    column-gap: 14px;
-    align-items: center;
-    padding: 16px;
-  }
-
-  .step svg {
-    grid-row: span 2;
-  }
-
-  .step h2 {
-    margin-top: 0;
-    font-size: 1.25rem;
-  }
+.home-footer-base .home-link:hover {
+  background: var(--footer-line);
 }
 
-@media (max-width: 480px) {
-  .hero-actions .button {
-    width: 100%;
-  }
+.home :focus-visible {
+  outline-color: var(--accent-ink);
+}
+
+.home-footer :focus-visible {
+  outline-color: var(--on-ink);
 }
 
 /* Sign-in and registration */
-.auth-form {
-  display: grid;
-  gap: 12px;
-  font-size: 1rem;
+.auth-dialog {
+  width: min(880px, calc(100vw - 32px));
+  max-width: none;
+  height: min(690px, calc(100dvh - 32px));
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 24px 70px rgb(18 48 42 / 32%);
+  animation: auth-open 180ms ease-out;
 }
 
-.auth-form h2 {
-  margin: 0 0 2px;
+.auth-dialog::backdrop {
+  background: rgb(18 48 42 / 52%);
+}
+
+@keyframes auth-open {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.auth-shell {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  height: 100%;
+}
+
+.auth-aside {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 12px;
+  padding: 28px;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.auth-aside .home-brand svg {
+  fill: var(--on-ink);
+}
+
+.auth-aside p {
+  color: var(--footer-soft);
+  font-size: 0.9375rem;
+}
+
+.auth-aside ol {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.auth-aside li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.auth-aside li span {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding-top: 2px;
+  border: 1px solid var(--footer-soft);
+  border-radius: 50%;
+  font-size: 0.8125rem;
+  line-height: 1;
+}
+
+.auth-emergency {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.auth-emergency:hover {
+  text-decoration: underline;
+}
+
+.auth-aside :focus-visible {
+  outline-color: var(--on-ink);
+}
+
+.auth-aside-clouds {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  width: 760px;
+  color: #1E4B41;
+}
+
+.auth-main {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  padding: 14px 40px 28px;
+  overflow-y: auto;
+}
+
+.auth-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-right: -26px;
+}
+
+.auth-topbar .home-brand {
+  display: none;
+}
+
+.auth-form {
+  display: grid;
+  align-content: center;
+  gap: 16px;
+}
+
+.auth-heading {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.auth-heading h2 {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 620;
+  font-stretch: 90%;
+}
+
+.auth-heading p {
+  color: var(--muted);
 }
 
 .auth-form h3 {
-  margin: 6px 0 0;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
   font-size: 1rem;
-  font-weight: 650;
+  font-weight: 620;
 }
 
 .auth-form label {
-  display: grid;
-  gap: 4px;
-  color: var(--soft);
+  gap: 5px;
   font-size: 0.875rem;
   font-weight: 500;
 }
 
-.auth-form input {
-  width: 100%;
+.auth-field {
+  display: grid;
+  gap: 5px;
+}
+
+/* A darker edge than --line, because a field's outline has to be visible on its own. */
+.home .auth-form input {
   min-height: 46px;
-  padding: 8px 12px;
-  border: 1px solid var(--edge);
-  border-radius: 12px;
-  background: rgb(15 19 24 / 70%);
-  color: var(--text);
-  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid #7C958D;
+  border-radius: 8px;
+  background: #FFFFFF;
   font-size: 1rem;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.home .auth-form input:hover {
+  border-color: var(--muted);
+}
+
+.home .auth-form input:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(14 107 87 / 22%);
+}
+
+.auth-password {
+  position: relative;
+}
+
+.home .auth-form .auth-password input {
+  padding-right: 46px;
+}
+
+.auth-password .icon-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  color: var(--muted);
 }
 
 .auth-form small {
-  color: var(--soft);
+  color: var(--muted);
+  font-size: 0.8125rem;
 }
 
 .auth-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
-.auth-error {
-  color: #ff9aa2;
-  font-weight: 500;
+.auth-form .form-error {
+  padding: 10px 12px;
+  border-left: 3px solid var(--critical);
+  border-radius: 4px;
+  background: rgb(191 47 44 / 8%);
+  font-size: 0.9375rem;
 }
 
 .auth-form .button {
-  min-height: 50px;
-  border-radius: 14px;
+  width: 100%;
 }
 
 .auth-switch {
-  padding: 8px;
-  border: 0;
-  background: none;
-  color: var(--gold);
-  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  text-align: center;
+}
+
+/* On phones the form takes the whole screen, which leaves room for the keyboard. */
+@media (max-width: 720px) {
+  .auth-dialog {
+    width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .auth-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .auth-aside {
+    display: none;
+  }
+
+  .auth-main {
+    padding: 10px 20px 24px;
+  }
+
+  .auth-topbar {
+    justify-content: space-between;
+    margin: 0 -6px 14px 0;
+  }
+
+  .auth-topbar .home-brand {
+    display: inline-flex;
+  }
+
+  .auth-form {
+    align-content: start;
+  }
+}
+
+/* Kannada conjuncts sit above and below the line, so they need more room. */
+.home:lang(kn) h1 {
+  line-height: 1.3;
+}
+
+.home:lang(kn) h2,
+.home:lang(kn) h3 {
+  line-height: 1.4;
+}
+
+@media (max-width: 960px) {
+  .home-nav {
+    display: none;
+  }
+
+  .home-hero {
+    min-height: 0;
+  }
+
+  .home-intro {
+    max-width: none;
+    padding: 20px var(--home-edge) 0;
+  }
+
+  /* On phones the temple gets its own band under the text, so nothing has to sit on top of it. */
+  .home-scene {
+    position: relative;
+    inset: auto;
+    grid-row: 3;
+    height: clamp(290px, 74vw, 500px);
+  }
+
+  .home-scene::after {
+    background: none;
+  }
+
+  .home-clouds {
+    width: max(100%, 760px);
+  }
+
+  .home-section {
+    padding-block: 44px;
+  }
+
+  .home-steps,
+  .home-points,
+  .home-split {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+
+  .home-footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-footer-about {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+
+  /* Five stages in a row do not fit, so the line runs down the page instead. */
+  .home-track {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-track li {
+    padding: 0 0 18px 24px;
+  }
+
+  .home-track li:last-child {
+    padding-bottom: 0;
+  }
+
+  .home-track li::before {
+    top: 6px;
+    bottom: -6px;
+    left: 5px;
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+
+  .home-track li::after {
+    top: 5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-actions,
+  .home-actions .button {
+    width: 100%;
+  }
+
+  .home-categories {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-footer-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-footer-base .home-link {
+    margin-inline: -12px 0;
+  }
 }
