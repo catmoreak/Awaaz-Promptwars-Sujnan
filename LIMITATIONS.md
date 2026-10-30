@@ -18,6 +18,12 @@
 - **Phone numbers are not verified.** There is no OTP, so a person can register a number that is not theirs. Forgotten passwords cannot be reset yet.
 - **The officer account is a shared demo login.** It uses a simple password chosen for the demo, and it must be changed before anyone relies on this. There are no per-officer accounts.
 
+- **The 3D temple is an artistic recreation.** It follows aerial and ground photographs of Saavira Kambada Basadi, but it was modelled from code, not surveyed, so proportions and carving are simplified. The lit lines along its walls are a design choice, not a feature of the real temple.
+
+## Measured results
+
+Duplicate detection scored 100% precision and 100% recall on the 46 labelled synthetic reports, using live Mistral analysis and embeddings. That set is small and was written alongside the system, so it shows the method works on these cases, not how it would perform on real reports.
+
 ## Reduced modes
 
 Awaaz keeps working when a service is missing, and says so on screen.

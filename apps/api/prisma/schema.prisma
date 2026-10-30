@@ -203,10 +203,3 @@ model IssueEvent {
   @@index([issueId, createdAt])
 }
 
-/// Cached by a hash of the hotspot's contents, so a brief regenerates only when its evidence changes.
-model HotspotBrief {
-  hotspotId   String   @id
-  contentHash String
-  brief       Json
-  createdAt   DateTime @default(now())
-}

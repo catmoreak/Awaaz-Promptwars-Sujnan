@@ -12,7 +12,6 @@ async function clearSynthetic() {
   await db.report.deleteMany({ where: { OR: [{ isSynthetic: true }, { user: { isDemo: true } }] } });
   // An issue with no reports left is a leftover. Merged issues are empty on purpose, so they stay.
   await db.issue.deleteMany({ where: { OR: [{ isSynthetic: true }, { reports: { none: {} }, mergedIntoId: null }] } });
-  await db.hotspotBrief.deleteMany();
 }
 
 async function seedTeams() {

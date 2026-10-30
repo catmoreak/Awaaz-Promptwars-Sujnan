@@ -157,19 +157,6 @@ export interface HotspotDto {
   topBand: PriorityResult['band'];
 }
 
-export interface ActionBriefDto {
-  hotspotId: string;
-  source: 'LLM' | 'RULES';
-  model: string;
-  headline: string;
-  situation: string;
-  suspectedCause: string;
-  recommendedActions: string[];
-  suggestedTeams: string[];
-  evidence: string[];
-  generatedAt: string;
-}
-
 export interface MapResponse {
   /** Outline of every H3 cell across the town, so the map has shape before anything is reported. */
   grid: { lat: number; lng: number }[][];

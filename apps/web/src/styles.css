@@ -1,0 +1,304 @@
+:root {
+  --bg: #0F1318;
+  --sidebar: rgb(232 226 212 / 4%);
+  --surface: #171C23;
+  --raised: #1F252E;
+  --line: #2E3641;
+  --text: #F4F1EA;
+  --muted: #A9B1BB;
+  --faint: #858E99;
+  --accent: #D9B56A;
+  --accent-strong: #D9B56A;
+  --accent-ink: #D9B56A;
+  --on-accent: #0F1318;
+  --critical: #E5484D;
+  --high: #F2994A;
+  --medium: #7AA7E0;
+  --low: #3FB68B;
+  --critical-text: #FF9AA2;
+  --sidebar-width: 216px;
+  --page-gutter: 36px;
+  color-scheme: dark;
+  font-family: 'Anek Kannada', 'Noto Sans Kannada', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(48rem 30rem at 92% -8%, rgb(217 181 106 / 7%), transparent 70%),
+    radial-gradient(40rem 30rem at -6% 108%, rgb(122 167 224 / 6%), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+p,
+dl,
+dd,
+figure {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.625rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+h3 {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.form-error {
+  color: var(--critical-text);
+  font-weight: 500;
+}
+
+.empty {
+  padding: 32px 16px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* Controls */
+.button {
+  min-height: 42px;
+  padding: 7px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.button-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.button-primary:hover:not(:disabled) {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--raised);
+}
+
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--accent-ink);
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.text-button:hover {
+  text-decoration: underline;
+}
+
+.chip {
+  min-height: 30px;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--accent);
+}
+
+.inline-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.9375rem;
+  font-weight: 550;
+}
+
+input:not([type='checkbox']),
+select,
+textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  font-weight: 400;
+}
+
+input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+textarea {
+  resize: vertical;
+}
+
+/* Loading */
+.loader {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  padding: 48px 0;
+}
+
+.loader-full {
+  min-height: 100dvh;
+}
+
+.loader-scene {
+  position: relative;
+  width: 96px;
+  height: 116px;
+  perspective: 420px;
+}
+
+.loader-rig {
+  position: absolute;
+  top: 0;
+  left: 18px;
+  width: 60px;
+  height: 75px;
+  transform-style: preserve-3d;
+  animation: loader-turn 1.8s cubic-bezier(0.55, 0.05, 0.45, 0.95) infinite;
+}
+
+.loader-layer {
+  position: absolute;
+  inset: 0;
+  fill: #9C7F43;
+}
+
+.loader-face {
+  fill: var(--accent);
+}
+
+.loader-tile {
+  position: absolute;
+  bottom: 0;
+  left: 22px;
+  width: 52px;
+  fill: var(--accent);
+  opacity: 0.16;
+  transform: rotateX(72deg);
+  animation: loader-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes loader-turn {
+  from {
+    transform: translateY(0) rotateY(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotateY(180deg);
+  }
+  to {
+    transform: translateY(0) rotateY(360deg);
+  }
+}
+
+@keyframes loader-pulse {
+  50% {
+    opacity: 0.08;
+    scale: 0.82;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -11,8 +11,6 @@ coverage/
 *.keystore
 *.jks
 google-services.json
-apps/citizen/android/
-apps/citizen/ios/
 apps/api/src/generated/
 *.log
 .DS_Store

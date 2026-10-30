@@ -15,6 +15,10 @@ See [LIMITATIONS.md](LIMITATIONS.md) for what is real, what is mocked and where 
 | `apps/api` | Fastify API, Prisma schema, AI pipeline, seed data and evaluation script. |
 | `packages/shared` | Types, validation, workflow rules and the priority formula, used by all three apps. |
 
+## Design
+
+The website opens on a public home page with a 3D model of Saavira Kambada Basadi, the Thousand Pillar Temple in Moodbidri, built with three.js. The model and the home page exist only in the web build, and the 3D library loads separately so it never slows the app. The phone app uses a still render of the same scene on its sign-in screen. Both apps share one charcoal and brass gold theme, a Kannada and English interface, and a turning map pin as the loading screen.
+
 ## How a report moves through the system
 
 ```mermaid

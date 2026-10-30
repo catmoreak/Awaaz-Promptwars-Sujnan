@@ -4,11 +4,13 @@
   "version": "0.1.0",
   "description": "Awaaz turns scattered citizen complaints into prioritized, explainable and trackable action.",
   "packageManager": "pnpm@10.8.1",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "api": "pnpm --filter @awaaz/api dev",
-    "dashboard": "pnpm --filter @awaaz/dashboard dev",
-    "citizen": "pnpm --filter @awaaz/citizen start",
+    "dev": "pnpm --parallel --filter @awaaz/api --filter @awaaz/web dev",
+    "build": "pnpm --filter @awaaz/api db:generate && pnpm --filter @awaaz/web build",
+    "start": "pnpm --filter @awaaz/api start",
     "db:migrate": "pnpm --filter @awaaz/api db:deploy",
     "db:seed": "pnpm --filter @awaaz/api db:seed",
     "eval:dedupe": "pnpm --filter @awaaz/api eval:dedupe",

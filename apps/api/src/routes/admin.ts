@@ -27,7 +27,6 @@ import { db } from '../db';
 import { HttpError, badRequest, notFound } from '../errors';
 import { Prisma } from '../generated/prisma/client';
 import { issueCode, priorityOf, toAdminReport, toIssueSummary, toTimelineEntry } from '../mappers';
-import { getActionBrief } from '../pipeline/brief';
 import { buildHotspots, buildMapCells, buildTownGrid, type HotspotIssue } from '../pipeline/hotspots';
 import { refreshIssueAggregates } from '../pipeline/issues';
 import { wakeWorker } from '../pipeline/worker';
@@ -251,14 +250,6 @@ export async function adminRoutes(app: FastifyInstance) {
       hotspots: await loadHotspots(open),
       issues: open.map(({ h3Res9: _cell, ...issue }) => issue).sort(byPriorityDesc),
     };
-  });
-
-  app.get<{ Params: { id: string } }>('/v1/admin/hotspots/:id/brief', async (request) => {
-    const open = await loadOpenIssues();
-    const hotspot = (await loadHotspots(open)).find((item) => item.id === request.params.id);
-    if (!hotspot) throw notFound('Hotspot');
-    const issues = open.filter((issue) => hotspot.issueIds.includes(issue.id));
-    return getActionBrief(hotspot, issues);
   });
 
   app.get('/v1/admin/teams', async (): Promise<TeamDto[]> => {
