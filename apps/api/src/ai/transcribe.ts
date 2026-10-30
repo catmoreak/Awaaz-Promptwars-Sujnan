@@ -13,13 +13,13 @@ const EXTENSIONS: Record<string, string> = {
   'audio/ogg': 'ogg',
 };
 
-// Boosts spellings the speech model would otherwise guess at.
-const LOCAL_TERMS = 'Moodbidri,Moodabidri,Vidyagiri,Alangar,Basadi,Kodangallu,Mahaveer College';
+// Boosts spellings the speech model would otherwise guess at. Mistral treats this as experimental outside English.
+const LOCAL_TERMS = ['Moodbidri', 'Moodabidri', 'Vidyagiri', 'Basadi'];
 
 async function transcribeWithMistral(base64: string, mime: string): Promise<{ text: string; language: string | null; model: string }> {
   const form = new FormData();
   form.set('model', env.MISTRAL_TRANSCRIBE_MODEL);
-  form.set('context_bias', LOCAL_TERMS);
+  for (const term of LOCAL_TERMS) form.append('context_bias', term);
   form.set('file', new Blob([Buffer.from(base64, 'base64')], { type: mime }), `report.${EXTENSIONS[mime] ?? 'wav'}`);
 
   const response = await fetch('https://api.mistral.ai/v1/audio/transcriptions', {

@@ -14,7 +14,7 @@ const CATEGORY_KEYWORDS: Record<Exclude<Category, 'OTHER'>, string[]> = {
 const HAZARD_KEYWORDS: { level: Level; words: string[] }[] = [
   {
     level: 3,
-    words: ['live wire', 'electric wire', 'fallen wire', 'sparking', 'electric shock', 'electrocut', 'open manhole', 'wall collapse', 'collapsed', 'gas leak', 'fire', 'ತಂತಿ', 'ಬೆಂಕಿ'],
+    words: ['live wire', 'electric wire', 'fallen wire', 'sparking', 'electric shock', 'electrocut', 'open manhole', 'wall collapse', 'collapsed', 'gas leak', 'on fire', 'caught fire', 'ತಂತಿ', 'ಬೆಂಕಿ'],
   },
   {
     level: 2,
@@ -29,15 +29,22 @@ const EXPOSURE_KEYWORDS: { level: Level; words: string[] }[] = [
 
 const SERVICE_KEYWORDS = ['no water', 'no power', 'road blocked', 'road is blocked', 'no electricity', 'ನೀರು ಬರುತ್ತಿಲ್ಲ'];
 
+/** Latin keywords must start at a word boundary, so "fire" does not match "misfire" but "flood" still matches "flooded". */
+function matches(text: string, word: string): boolean {
+  if (!/^[a-z]/.test(word)) return text.includes(word);
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^a-z])${escaped}`).test(text);
+}
+
 function includesAny(text: string, words: string[]): boolean {
-  return words.some((word) => text.includes(word));
+  return words.some((word) => matches(text, word));
 }
 
 export function detectCategory(text: string): Category | null {
   const lower = text.toLowerCase();
   let best: { category: Category; hits: number } | null = null;
   for (const [category, words] of Object.entries(CATEGORY_KEYWORDS) as [Category, string[]][]) {
-    const hits = words.filter((word) => lower.includes(word)).length;
+    const hits = words.filter((word) => matches(lower, word)).length;
     if (hits > 0 && (!best || hits > best.hits)) best = { category, hits };
   }
   return best?.category ?? null;
