@@ -1,0 +1,8 @@
+{
+  "name": "dhwani",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Dhwani turns scattered citizen complaints into prioritized, explainable and trackable action.",
+  "workspaces": ["packages/*", "apps/*"],
+  "engines": { "node": ">=22" }
+}
