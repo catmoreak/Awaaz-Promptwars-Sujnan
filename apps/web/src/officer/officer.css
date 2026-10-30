@@ -799,7 +799,10 @@
 .report-image {
   display: block;
   width: 100%;
+  max-height: 340px;
   border-radius: 6px;
+  background: var(--raised);
+  object-fit: contain;
 }
 
 .merge summary {
@@ -1001,4 +1004,80 @@
 
 .report-contact a {
   color: var(--accent);
+}
+
+/* Live reports */
+.live-reports {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 14px 16px 8px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.live-reports h2 {
+  font-size: 1rem;
+}
+
+.live-reports li + li {
+  border-top: 1px solid var(--line);
+}
+
+.live-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+}
+
+button.live-row {
+  cursor: pointer;
+}
+
+button.live-row:hover .live-title {
+  color: var(--accent-ink);
+  text-decoration: underline;
+}
+
+.live-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-waiting .live-title {
+  font-weight: 400;
+}
+
+.live-meta {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.live-reports svg {
+  flex: none;
+  color: var(--accent-ink);
+}
+
+.row-sub .inline-icon {
+  margin-left: 10px;
+  color: var(--accent-ink);
+}
+
+.issue-photos {
+  display: grid;
+  gap: 8px;
 }

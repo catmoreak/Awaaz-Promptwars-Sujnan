@@ -1,5 +1,6 @@
 import { CATEGORY_LABELS, OPEN_STATUSES, STATUS_LABELS, type IssueSummaryDto } from '@awaaz/shared';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Camera } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { api } from '../api';
 import { ComparePanel } from './ComparePanel';
@@ -18,6 +19,8 @@ const FILTERS: { id: Filter; label: string; test: (issue: IssueSummaryDto) => bo
 ];
 
 const REFRESH_MS = 8_000;
+const LIVE_WINDOW_MS = 24 * 3_600_000;
+const LIVE_LIMIT = 6;
 
 interface QueueProps {
   selectedIssueId: string | null;
@@ -28,6 +31,63 @@ function daysOpen(issue: IssueSummaryDto): string {
   const days = Math.floor((Date.now() - new Date(issue.firstReportedAt).getTime()) / 86_400_000);
   if (days < 1) return 'Today';
   return days === 1 ? '1 day ago' : `${days} days ago`;
+}
+
+function timeAgo(iso: string): string {
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  return `${Math.floor(minutes / 60)} hr ago`;
+}
+
+/** A new report ranks by score, so it can sit far down the queue. This keeps it in view when it arrives. */
+function LiveReports({ issues, onSelectIssue }: { issues: IssueSummaryDto[]; onSelectIssue: (id: string) => void }) {
+  const queryClient = useQueryClient();
+  const intake = useQuery({ queryKey: ['intake'], queryFn: api.intake, refetchInterval: REFRESH_MS });
+  const retry = useMutation({
+    mutationFn: api.retryReport,
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['intake'] }),
+  });
+
+  const recent = issues
+    .filter((issue) => !issue.isSynthetic && Date.now() - new Date(issue.lastReportedAt).getTime() < LIVE_WINDOW_MS)
+    .sort((a, b) => b.lastReportedAt.localeCompare(a.lastReportedAt))
+    .slice(0, LIVE_LIMIT);
+  const waiting = intake.data ?? [];
+
+  if (recent.length === 0 && waiting.length === 0) return null;
+
+  return (
+    <section className="live-reports" aria-label="Live reports">
+      <h2>Live reports</h2>
+      <ul>
+        {waiting.map((report) => (
+          <li key={report.id} className="live-row live-waiting">
+            <span className="live-title">{report.text}</span>
+            {report.hasImage && <Camera size={15} aria-label="Has a photo" />}
+            <span className="live-meta">{report.failed ? 'Could not be analysed' : 'Being analysed'}</span>
+            {report.failed && (
+              <button className="text-button" disabled={retry.isPending} onClick={() => retry.mutate(report.id)}>
+                Try again
+              </button>
+            )}
+            <span className="live-meta">{timeAgo(report.createdAt)}</span>
+          </li>
+        ))}
+        {recent.map((issue) => (
+          <li key={issue.id}>
+            <button className="live-row" onClick={() => onSelectIssue(issue.id)}>
+              <span className="live-title">{issue.title}</span>
+              {issue.photoCount > 0 && <Camera size={15} aria-label="Has a photo" />}
+              <span className="live-meta">{issue.reportCount > 1 ? `${issue.reportCount} reports` : issue.code}</span>
+              <span className="live-meta">{timeAgo(issue.lastReportedAt)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {retry.isError && <p className="form-error">{retry.error.message}</p>}
+    </section>
+  );
 }
 
 export function Queue({ selectedIssueId, onSelectIssue }: QueueProps) {
@@ -54,6 +114,8 @@ export function Queue({ selectedIssueId, onSelectIssue }: QueueProps) {
       <header className="page-header">
         <h1>Queue</h1>
       </header>
+
+      <LiveReports issues={issues.data ?? []} onSelectIssue={onSelectIssue} />
 
       <div className="tabs" role="tablist" aria-label="Filter issues">
         {FILTERS.map((item) => (
@@ -99,7 +161,16 @@ export function Queue({ selectedIssueId, onSelectIssue }: QueueProps) {
                   <button className="row-title" onClick={() => onSelectIssue(issue.id)}>
                     {issue.title}
                   </button>
-                  <span className="row-sub">{issue.code}</span>
+                  <span className="row-sub">
+                    {issue.code}
+                    {issue.isSynthetic && ' (synthetic)'}
+                    {issue.photoCount > 0 && (
+                      <span className="inline-icon">
+                        <Camera size={13} aria-hidden="true" />
+                        {issue.photoCount === 1 ? 'Photo' : `${issue.photoCount} photos`}
+                      </span>
+                    )}
+                  </span>
                 </td>
                 <td className="col-category">{CATEGORY_LABELS[issue.category].en}</td>
                 <td className="col-status">{STATUS_LABELS[issue.status].en}</td>

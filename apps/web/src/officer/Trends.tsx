@@ -52,7 +52,7 @@ function CategoryBars({ rows }: { rows: StatsResponse['byCategory'] }) {
 }
 
 export function Trends() {
-  const stats = useQuery({ queryKey: ['stats'], queryFn: api.stats });
+  const stats = useQuery({ queryKey: ['stats'], queryFn: api.stats, refetchInterval: 8_000 });
   const data = stats.data;
 
   return (

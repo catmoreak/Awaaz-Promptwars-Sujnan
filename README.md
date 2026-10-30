@@ -117,6 +117,9 @@ Citizens register in the app with their name, mobile number, password and home a
 | `GOOGLE_MAPS_SERVER_KEY` | Addresses and nearby schools or hospitals. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | The officer dashboard account. |
 | `CORS_ORIGINS` | The sites allowed to call the API. |
+| `AWS_ENDPOINT_URL_S3`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_BUCKET` | Report photos, in Neon Object Storage or any S3-compatible bucket. Without them, photos stay in Postgres. |
+
+Photos saved before storage was set up, or while it was unavailable, move across with `pnpm --filter @awaaz/api images:move`.
 
 ### Google Cloud setup
 
@@ -162,10 +165,14 @@ Use these Dokploy settings:
 
 Add production environment variables in Dokploy's environment settings rather than
 committing an `.env` file. Set `NODE_ENV=production`, `PORT=8080`, the database URLs,
-`JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and any optional AI, Maps, Speech and
-`CORS_ORIGINS` values. Set `CORS_ORIGINS` to the public site origin if the API is
-served from a different domain; it can remain empty when the web client is served by
-the same container.
+`JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, the object storage values, and any
+optional AI, Maps, Speech and `CORS_ORIGINS` values. Set `CORS_ORIGINS` to the public
+site origin if the API is served from a different domain; it can remain empty when the
+web client is served by the same container.
+
+Set `VITE_GOOGLE_MAPS_KEY` as a build argument as well, and allow the public site's
+address on that key in Google Cloud. Without it the site falls back to a plain grid
+with no satellite map.
 
 After the first deploy, run the migration command once from Dokploy's terminal:
 

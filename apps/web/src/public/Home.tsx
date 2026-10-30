@@ -42,6 +42,11 @@ function AuthForm({ panel, onPanel, onSignedIn }: { panel: Exclude<Panel, 'none'
   const [passwordVisible, setPasswordVisible] = useState(false);
   const registering = panel === 'register';
 
+  const switchPanel = () => {
+    setError(null);
+    onPanel(registering ? 'sign-in' : 'register');
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -139,7 +144,7 @@ function AuthForm({ panel, onPanel, onSignedIn }: { panel: Exclude<Panel, 'none'
       </button>
       <p className="auth-switch">
         {registering ? t.haveAccount : t.newHere}{' '}
-        <button type="button" className="text-button" onClick={() => onPanel(registering ? 'sign-in' : 'register')}>
+        <button type="button" className="text-button" onClick={switchPanel}>
           {registering ? t.signIn : t.createAccount}
         </button>
       </p>

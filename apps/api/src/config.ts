@@ -25,6 +25,11 @@ const EnvSchema = z.object({
   OPENROUTER_API_KEY: z.string().default(''),
   OPENROUTER_CHAT_MODEL: z.string().default('mistralai/mistral-small-2603'),
   GOOGLE_SPEECH_API_KEY: z.string().default(''),
+  AWS_ENDPOINT_URL_S3: z.string().default(''),
+  AWS_ACCESS_KEY_ID: z.string().default(''),
+  AWS_SECRET_ACCESS_KEY: z.string().default(''),
+  AWS_REGION: z.string().default('us-east-2'),
+  S3_BUCKET: z.string().default(''),
   SERVICE_CENTER_LAT: z.coerce.number().default(SERVICE_AREA.lat),
   SERVICE_CENTER_LNG: z.coerce.number().default(SERVICE_AREA.lng),
   SERVICE_RADIUS_KM: z.coerce.number().positive().default(SERVICE_AREA.radiusKm),
@@ -36,4 +41,5 @@ export const features = {
   llm: Boolean(env.MISTRAL_API_KEY || env.OPENROUTER_API_KEY),
   voice: Boolean(env.GOOGLE_SPEECH_API_KEY),
   places: Boolean(env.GOOGLE_MAPS_SERVER_KEY),
+  objectStorage: Boolean(env.AWS_ENDPOINT_URL_S3 && env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY && env.S3_BUCKET),
 };

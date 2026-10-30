@@ -95,8 +95,21 @@ export interface IssueSummaryDto {
   teamName: string | null;
   priority: PriorityResult;
   isSynthetic: boolean;
+  photoCount: number;
   firstReportedAt: string;
+  lastReportedAt: string;
   updatedAt: string;
+}
+
+/** A report still waiting for analysis, so it does not belong to an issue yet. */
+export interface IntakeReportDto {
+  id: string;
+  code: string;
+  text: string;
+  category: Category;
+  hasImage: boolean;
+  failed: boolean;
+  createdAt: string;
 }
 
 export interface AdminReportDto {

@@ -53,7 +53,7 @@ Awaaz keeps working when a service is missing, and says so on screen.
 - H3 cells do not follow roads, so a problem along one street can span cells, and nearby problems on parallel streets can share one.
 - The report worker handles one report at a time on one server instance. Running several instances could let simultaneous duplicates create two issues.
 - Priority weights are my judgement, not a policy agreed with any municipality.
-- Report photos are stored in Postgres. That suits a prototype, but production should use object storage.
+- Report photos are stored in Neon Object Storage, which is in preview. If it is unavailable, a photo falls back to Postgres. Deleting a report row by hand does not delete its photo from the bucket.
 - A session lasts 7 days and cannot be revoked individually before it expires.
 - The town centre uses the PIN listing coordinates, because public sources disagree on them.
 

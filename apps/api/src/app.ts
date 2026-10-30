@@ -35,6 +35,8 @@ export async function buildApp() {
         connectSrc: ["'self'", 'https://*.googleapis.com'],
         workerSrc: ["'self'", 'blob:'],
         mediaSrc: ["'self'", 'blob:'],
+        // Helmet's default would blank the whole site on any address without HTTPS.
+        upgradeInsecureRequests: null,
       },
     },
   });

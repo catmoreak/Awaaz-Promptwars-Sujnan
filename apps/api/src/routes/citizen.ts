@@ -7,7 +7,7 @@ import { forbidden, notFound } from '../errors';
 import { Prisma } from '../generated/prisma/client';
 import { issueCode, priorityOf, reportCode, toAnalysis, toTimelineEntry } from '../mappers';
 import { wakeWorker } from '../pipeline/worker';
-import { saveReport } from '../reports';
+import { readImage, saveReport } from '../reports';
 
 const REPORT_RATE_LIMIT = { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } };
 
@@ -108,7 +108,7 @@ export async function citizenRoutes(app: FastifyInstance) {
     });
     if (!report?.image) throw notFound('Image');
     if (report.userId !== user.id && user.role !== 'ADMIN') throw forbidden();
-    return { dataUrl: `data:${report.image.mime};base64,${Buffer.from(report.image.bytes).toString('base64')}` };
+    return { dataUrl: `data:${report.image.mime};base64,${(await readImage(report.image)).toString('base64')}` };
   });
 
   app.post('/v1/transcribe', REPORT_RATE_LIMIT, async (request) => {

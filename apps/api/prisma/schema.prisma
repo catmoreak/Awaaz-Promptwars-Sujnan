@@ -177,11 +177,13 @@ model Report {
   @@index([issueId])
 }
 
+/// The photo lives in object storage under storageKey. Bytes are only used if storage was unavailable.
 model ReportImage {
-  reportId  String   @id
-  mime      String
-  bytes     Bytes
-  createdAt DateTime @default(now())
+  reportId   String   @id
+  mime       String
+  storageKey String?
+  bytes      Bytes?
+  createdAt  DateTime @default(now())
 
   report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
 }

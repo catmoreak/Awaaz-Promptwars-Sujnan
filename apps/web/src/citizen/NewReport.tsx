@@ -6,7 +6,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { ApiError, api } from '../api';
 import { CATEGORY_ICONS } from '../shared/categories';
 import { useLanguage, type Language } from '../shared/language';
-import { MAPS_KEY, MAP_STYLES, useMapsAvailable } from '../shared/maps';
+import { MAPS_KEY, MAP_TYPE, useMapsAvailable } from '../shared/maps';
 import { useVoiceRecorder } from './useVoiceRecorder';
 import { MAX_RECORDING_MS } from './voice';
 
@@ -35,7 +35,7 @@ function PinMap({ value, onChange }: { value: LatLng | null; onChange: (value: L
         <Map
           defaultCenter={{ lat: SERVICE_AREA.lat, lng: SERVICE_AREA.lng }}
           defaultZoom={14}
-          styles={MAP_STYLES}
+          mapTypeId={MAP_TYPE}
           center={value ?? undefined}
           gestureHandling="greedy"
           clickableIcons={false}
@@ -66,6 +66,7 @@ export function NewReport({ onSent }: { onSent: (id: string) => void }) {
   const [lngInput, setLngInput] = useState('');
   const [landmark, setLandmark] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [viaVoice, setViaVoice] = useState(false);
   const [voiceLanguage, setVoiceLanguage] = useState<Language>(language);
   const [formError, setFormError] = useState<string | null>(null);
@@ -103,8 +104,15 @@ export function NewReport({ onSent }: { onSent: (id: string) => void }) {
 
   const choosePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) setPhoto(await preparePhoto(file));
     event.target.value = '';
+    if (!file) return;
+    setPhotoError(null);
+    try {
+      setPhoto(await preparePhoto(file));
+    } catch {
+      // Some phone formats, such as HEIC, cannot be opened by every browser.
+      setPhotoError(t.photoFailed);
+    }
   };
 
   const place = (next: LatLng) => {
@@ -254,6 +262,7 @@ export function NewReport({ onSent }: { onSent: (id: string) => void }) {
             <input type="file" accept="image/*" capture="environment" onChange={(event) => void choosePhoto(event)} />
           </label>
         )}
+        {photoError && <p className="form-error">{photoError}</p>}
       </section>
 
       {formError && <p className="form-error">{formError}</p>}

@@ -9,9 +9,17 @@ import {
   type SensitiveSite,
   type TimelineEntry,
 } from '@awaaz/shared';
-import type { Issue, IssueEvent, Report, Team, User } from './generated/prisma/client';
+import type { Issue, IssueEvent, Prisma, Report, Team, User } from './generated/prisma/client';
 
 const DAY_MS = 86_400_000;
+
+/** What every issue row needs, so a new report or photo shows up on rows as well as inside them. */
+export const issueSummaryInclude = {
+  team: true,
+  reports: { select: { createdAt: true, image: { select: { reportId: true } } } },
+} satisfies Prisma.IssueInclude;
+
+type SummaryIssue = Issue & { team: Team | null; reports: { createdAt: Date; image: { reportId: string } | null }[] };
 
 export const issueCode = (seq: number) => `ISS-${String(seq).padStart(4, '0')}`;
 export const reportCode = (seq: number) => `AWZ-${String(seq).padStart(4, '0')}`;
@@ -29,7 +37,8 @@ export function priorityOf(issue: Issue, now = new Date()): PriorityResult {
   });
 }
 
-export function toIssueSummary(issue: Issue & { team: Team | null }): IssueSummaryDto {
+export function toIssueSummary(issue: SummaryIssue): IssueSummaryDto {
+  const lastReportedAt = Math.max(issue.firstReportedAt.getTime(), ...issue.reports.map((report) => report.createdAt.getTime()));
   return {
     id: issue.id,
     code: issueCode(issue.seq),
@@ -44,7 +53,9 @@ export function toIssueSummary(issue: Issue & { team: Team | null }): IssueSumma
     teamName: issue.team?.name ?? null,
     priority: priorityOf(issue),
     isSynthetic: issue.isSynthetic,
+    photoCount: issue.reports.filter((report) => report.image).length,
     firstReportedAt: issue.firstReportedAt.toISOString(),
+    lastReportedAt: new Date(lastReportedAt).toISOString(),
     updatedAt: issue.updatedAt.toISOString(),
   };
 }

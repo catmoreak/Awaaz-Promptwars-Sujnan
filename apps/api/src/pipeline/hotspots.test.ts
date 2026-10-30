@@ -25,7 +25,9 @@ function issue(category: Category, h3Res9: string, reportCount = 1): HotspotIssu
     teamName: null,
     priority: scorePriority({ hazard: 1, exposure: 1, serviceDisruption: false, sensitiveSites: [], reportCount, ageDays: 1 }),
     isSynthetic: true,
+    photoCount: 0,
     firstReportedAt: new Date(0).toISOString(),
+    lastReportedAt: new Date(0).toISOString(),
     updatedAt: new Date(0).toISOString(),
     h3Res9,
   };

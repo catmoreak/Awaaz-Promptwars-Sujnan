@@ -27,9 +27,9 @@ function puffRow(seed: number, step: number, floor: number, radius: number) {
 
 // Back to front: each layer is lower and more solid, so the last one becomes the colour beneath it.
 const LAYERS = [
-  { floor: 104, opacity: 0.4, puffs: puffRow(3, 124, 104, 58) },
-  { floor: 126, opacity: 0.7, puffs: puffRow(11, 98, 126, 48) },
-  { floor: 146, opacity: 1, puffs: puffRow(29, 80, 146, 38) },
+  { floor: 92, opacity: 0.45, puffs: puffRow(3, 124, 92, 62) },
+  { floor: 114, opacity: 0.75, puffs: puffRow(11, 98, 114, 52) },
+  { floor: 136, opacity: 1, puffs: puffRow(29, 80, 136, 42) },
 ];
 
 /** Static SVG, painted once, so it adds no work per frame even on top of the 3D scene. Colour comes from `color`. */

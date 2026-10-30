@@ -1,8 +1,13 @@
+import { randomUUID } from 'node:crypto';
 import { LIMITS, type Category } from '@awaaz/shared';
+import { features } from './config';
 import { db } from './db';
 import { badRequest } from './errors';
-import type { ReportSource } from './generated/prisma/client';
+import type { Prisma, ReportSource } from './generated/prisma/client';
 import { h3Cells, isInServiceArea } from './geo';
+import { deleteObject, getObject, putObject } from './storage';
+
+const IMAGE_EXTENSIONS: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 
 const IMAGE_SIGNATURES: Record<string, (bytes: Buffer) => boolean> = {
   'image/jpeg': (bytes) => bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff,
@@ -20,6 +25,29 @@ export function decodeImage(image: { base64: string; mime: string }): { bytes: B
     throw badRequest('invalid_image', 'The file is not a valid JPEG, PNG or WebP image');
   }
   return { bytes, mime: image.mime };
+}
+
+export const photoKey = (mime: string) => `reports/${randomUUID()}.${IMAGE_EXTENSIONS[mime] ?? 'bin'}`;
+
+/** Falls back to Postgres if storage is unavailable, because losing a citizen's photo is worse than a larger table. */
+async function storeImage({ bytes, mime }: { bytes: Buffer; mime: string }): Promise<Prisma.ReportImageCreateWithoutReportInput> {
+  const inDatabase = { mime, bytes: new Uint8Array(bytes) };
+  if (!features.objectStorage) return inDatabase;
+
+  const storageKey = photoKey(mime);
+  try {
+    await putObject(storageKey, bytes, mime);
+    return { mime, storageKey };
+  } catch (error) {
+    console.error('Object storage failed, so this photo stays in the database', error);
+    return inDatabase;
+  }
+}
+
+export async function readImage(image: { storageKey: string | null; bytes: Uint8Array | null }): Promise<Buffer> {
+  if (image.storageKey) return getObject(image.storageKey);
+  if (image.bytes) return Buffer.from(image.bytes);
+  throw new Error('This photo has no stored content');
 }
 
 export interface NewReport {
@@ -43,22 +71,28 @@ export async function saveReport(input: NewReport) {
     throw badRequest('outside_service_area', 'This location is outside the Moodbidri service area');
   }
 
-  const image = input.image ? decodeImage(input.image) : null;
+  const image = input.image ? await storeImage(decodeImage(input.image)) : null;
 
-  return db.report.create({
-    data: {
-      text: input.text,
-      userCategory: input.category,
-      lat: input.lat,
-      lng: input.lng,
-      address: input.address || null,
-      ...h3Cells(point),
-      source: input.source,
-      channel: input.channel,
-      viaVoice: input.viaVoice ?? false,
-      userId: input.userId,
-      clientRequestId: input.clientRequestId,
-      image: image ? { create: { bytes: new Uint8Array(image.bytes), mime: image.mime } } : undefined,
-    },
-  });
+  try {
+    return await db.report.create({
+      data: {
+        text: input.text,
+        userCategory: input.category,
+        lat: input.lat,
+        lng: input.lng,
+        address: input.address || null,
+        ...h3Cells(point),
+        source: input.source,
+        channel: input.channel,
+        viaVoice: input.viaVoice ?? false,
+        userId: input.userId,
+        clientRequestId: input.clientRequestId,
+        image: image ? { create: image } : undefined,
+      },
+    });
+  } catch (error) {
+    // A retried request lands here too, and the first attempt already holds its own copy of the photo.
+    if (image?.storageKey) await deleteObject(image.storageKey).catch(() => undefined);
+    throw error;
+  }
 }

@@ -6,6 +6,7 @@ import { features } from '../config';
 import { db } from '../db';
 import { Prisma } from '../generated/prisma/client';
 import { neighbourhood } from '../geo';
+import { readImage } from '../reports';
 import { decideDuplicate, type CandidateIssue } from './dedupe';
 import { refreshIssueAggregates } from './issues';
 
@@ -61,7 +62,7 @@ export async function processReport(reportId: string): Promise<void> {
   const analysis = await analyzeReport({
     text: report.text,
     userCategory: report.userCategory,
-    image: report.image ? { base64: Buffer.from(report.image.bytes).toString('base64'), mime: report.image.mime } : undefined,
+    image: report.image ? { base64: (await readImage(report.image)).toString('base64'), mime: report.image.mime } : undefined,
   });
   const embedding = await embedText(analysis.englishText);
   const address = report.address ?? (await reverseGeocode(report));

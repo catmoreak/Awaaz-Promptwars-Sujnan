@@ -8,13 +8,15 @@ import {
   type PriorityFactor,
 } from '@awaaz/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ImageIcon, Mic, Unlink, X } from 'lucide-react';
+import { Mic, Unlink, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Loader } from '../shared/Loader';
 import { ScoreHex } from './Hexagon';
 
 type Tab = 'overview' | 'reports' | 'history';
+
+const REFRESH_MS = 8_000;
 
 interface IssueDrawerProps {
   issueId: string;
@@ -47,17 +49,9 @@ function FactorRow({ factor }: { factor: PriorityFactor }) {
 }
 
 function ReportImage({ reportId }: { reportId: string }) {
-  const [visible, setVisible] = useState(false);
-  const image = useQuery({ queryKey: ['image', reportId], queryFn: () => api.image(reportId), enabled: visible });
+  // A saved photo never changes, so refreshing the panel does not download it again.
+  const image = useQuery({ queryKey: ['image', reportId], queryFn: () => api.image(reportId), staleTime: Infinity });
 
-  if (!visible) {
-    return (
-      <button className="text-button" onClick={() => setVisible(true)}>
-        <ImageIcon size={15} aria-hidden="true" />
-        Photo
-      </button>
-    );
-  }
   if (image.isError) return <p className="form-error">{image.error.message}</p>;
   return image.data ? <img className="report-image" src={image.data.dataUrl} alt="Attached to this report" /> : <Loader />;
 }
@@ -70,6 +64,7 @@ function ReportCard({ report, canDetach, onDetach }: { report: AdminReportDto; c
     <li className="report-card">
       <p lang={analysis?.language === 'Kannada' ? 'kn' : undefined}>{report.text}</p>
       {translated && <p className="muted">{analysis.englishText}</p>}
+      {report.hasImage && <ReportImage reportId={report.id} />}
 
       {report.reporter && (
         <p className="report-contact">
@@ -85,7 +80,6 @@ function ReportCard({ report, canDetach, onDetach }: { report: AdminReportDto; c
             Voice
           </span>
         )}
-        {report.hasImage && <ReportImage reportId={report.id} />}
         {canDetach && (
           <button className="text-button" onClick={onDetach}>
             <Unlink size={15} aria-hidden="true" />
@@ -241,7 +235,7 @@ function MergeControl({ issue, onMerged }: { issue: IssueDetailDto; onMerged: (i
 
 export function IssueDrawer({ issueId, onClose, onSelectIssue }: IssueDrawerProps) {
   const queryClient = useQueryClient();
-  const issue = useQuery({ queryKey: ['issue', issueId], queryFn: () => api.issue(issueId) });
+  const issue = useQuery({ queryKey: ['issue', issueId], queryFn: () => api.issue(issueId), refetchInterval: REFRESH_MS });
   const [tab, setTab] = useState<Tab>('overview');
 
   useEffect(() => {
@@ -257,6 +251,7 @@ export function IssueDrawer({ issueId, onClose, onSelectIssue }: IssueDrawerProp
 
   const data = issue.data;
   const isOpen = data && !['RESOLVED', 'REJECTED'].includes(data.status);
+  const photoReports = data?.reports.filter((report) => report.hasImage) ?? [];
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -302,6 +297,14 @@ export function IssueDrawer({ issueId, onClose, onSelectIssue }: IssueDrawerProp
               {tab === 'overview' && (
                 <section className="drawer-section">
                   {data.address && <p className="muted">{data.address}</p>}
+                  <p>{data.summary}</p>
+                  {photoReports.length > 0 && (
+                    <div className="issue-photos">
+                      {photoReports.map((report) => (
+                        <ReportImage key={report.id} reportId={report.id} />
+                      ))}
+                    </div>
+                  )}
                   <ul className="factors">
                     {data.priority.factors
                       .filter((factor) => factor.points > 0)

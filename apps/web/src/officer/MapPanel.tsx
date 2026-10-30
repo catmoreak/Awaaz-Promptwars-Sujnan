@@ -3,16 +3,16 @@ import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import { useEffect, useMemo } from 'react';
 import { BAND_LABELS } from './Hexagon';
 import { Loader } from '../shared/Loader';
-import { MAPS_KEY, MAP_STYLES, useMapsAvailable } from '../shared/maps';
+import { MAPS_KEY, MAP_TYPE, useMapsAvailable } from '../shared/maps';
 
 const BANDS = Object.keys(BAND_LABELS) as PriorityBand[];
 
-/** Checked for colour-blind separation against the dark map. */
+/** Bright enough to stand out on satellite imagery. */
 const TOWN_COLORS: Record<PriorityBand, string> = {
-  CRITICAL: '#BF2F2C',
-  HIGH: '#A04B00',
-  MEDIUM: '#2A67AD',
-  LOW: '#1B7355',
+  CRITICAL: '#FF4B45',
+  HIGH: '#FF9F1C',
+  MEDIUM: '#4DA3FF',
+  LOW: '#3DDC97',
 };
 
 interface MapPanelProps {
@@ -66,8 +66,8 @@ function GoogleOverlays({ data, onSelectIssue }: Omit<MapPanelProps, 'selectedIs
           new google.maps.Polyline({
             map,
             path: [...boundary, boundary[0] as google.maps.LatLngLiteral],
-            strokeColor: '#12302A',
-            strokeWeight: 2,
+            strokeColor: '#FFFFFF',
+            strokeWeight: 3,
           }),
         );
       }
@@ -195,7 +195,7 @@ export function MapPanel(props: MapPanelProps) {
     return (
       <div className="map-frame">
         <APIProvider apiKey={MAPS_KEY as string}>
-          <Map defaultCenter={center} defaultZoom={14} styles={MAP_STYLES} gestureHandling="greedy" clickableIcons={false} disableDefaultUI>
+          <Map defaultCenter={center} defaultZoom={14} mapTypeId={MAP_TYPE} gestureHandling="greedy" clickableIcons={false} disableDefaultUI zoomControl>
             <GoogleOverlays data={props.data} onSelectIssue={props.onSelectIssue} />
           </Map>
         </APIProvider>

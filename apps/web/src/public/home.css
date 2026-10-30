@@ -161,7 +161,7 @@ html:has(.auth-dialog[open]) {
 }
 
 .home-intro p {
-  max-width: 34rem;
+  max-width: 29rem;
   color: var(--muted);
   font-size: 1.125rem;
 }
@@ -414,7 +414,7 @@ html:has(.auth-dialog[open]) {
 .auth-dialog {
   width: min(880px, calc(100vw - 32px));
   max-width: none;
-  height: min(690px, calc(100dvh - 32px));
+  height: min(720px, calc(100dvh - 32px));
   max-height: none;
   padding: 0;
   overflow: hidden;

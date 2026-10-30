@@ -5,6 +5,7 @@ import type {
   CompareResponse,
   CreateReportInput,
   IssueDetailDto,
+  IntakeReportDto,
   IssueSummaryDto,
   MapResponse,
   RegisterForm,
@@ -77,6 +78,8 @@ export const api = {
 
   map: () => request<MapResponse>('/v1/admin/map'),
   issues: () => request<IssueSummaryDto[]>('/v1/admin/issues'),
+  intake: () => request<IntakeReportDto[]>('/v1/admin/intake'),
+  retryReport: (id: string) => request<{ id: string }>(`/v1/admin/reports/${id}/retry`, {}),
   issue: (id: string) => request<IssueDetailDto>(`/v1/admin/issues/${id}`),
   transition: (id: string, input: TransitionInput) => request<IssueDetailDto>(`/v1/admin/issues/${id}/transition`, input),
   merge: (id: string, intoIssueId: string) => request<IssueDetailDto>(`/v1/admin/issues/${id}/merge`, { intoIssueId }),

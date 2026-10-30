@@ -13,6 +13,7 @@ import {
   comparePriority,
   transitionNeedsNote,
   type CompareResponse,
+  type IntakeReportDto,
   type IssueDetailDto,
   type IssueStatus,
   type IssueSummaryDto,
@@ -26,7 +27,7 @@ import { env } from '../config';
 import { db } from '../db';
 import { HttpError, badRequest, notFound } from '../errors';
 import { Prisma } from '../generated/prisma/client';
-import { issueCode, priorityOf, toAdminReport, toIssueSummary, toTimelineEntry } from '../mappers';
+import { issueCode, issueSummaryInclude, priorityOf, reportCode, toAdminReport, toIssueSummary, toTimelineEntry } from '../mappers';
 import { buildHotspots, buildMapCells, buildTownGrid, type HotspotIssue } from '../pipeline/hotspots';
 import { refreshIssueAggregates } from '../pipeline/issues';
 import { wakeWorker } from '../pipeline/worker';
@@ -39,7 +40,7 @@ const DAY_MS = 86_400_000;
 async function loadOpenIssues(): Promise<HotspotIssue[]> {
   const issues = await db.issue.findMany({
     where: { status: { in: [...OPEN_STATUSES] }, mergedIntoId: null },
-    include: { team: true },
+    include: issueSummaryInclude,
   });
   return issues.map((issue) => ({ ...toIssueSummary(issue), h3Res9: issue.h3Res9 }));
 }
@@ -58,7 +59,7 @@ function byPriorityDesc(a: IssueSummaryDto, b: IssueSummaryDto): number {
 }
 
 async function loadSummary(id: string): Promise<IssueSummaryDto> {
-  const issue = await db.issue.findUnique({ where: { id }, include: { team: true } });
+  const issue = await db.issue.findUnique({ where: { id }, include: issueSummaryInclude });
   if (!issue) throw notFound('Issue');
   return toIssueSummary(issue);
 }
@@ -102,11 +103,40 @@ export async function adminRoutes(app: FastifyInstance) {
         status: IssueFiltersSchema.status(status) ? status : undefined,
         category: IssueFiltersSchema.category(category) ? category : undefined,
       },
-      include: { team: true },
+      include: issueSummaryInclude,
       take: 500,
       orderBy: { firstReportedAt: 'desc' },
     });
     return issues.map(toIssueSummary).sort(byPriorityDesc);
+  });
+
+  /** Reports that have no issue yet. Without this they would be invisible to staff until analysis finishes. */
+  app.get('/v1/admin/intake', async (): Promise<IntakeReportDto[]> => {
+    const reports = await db.report.findMany({
+      where: { aiState: { not: 'DONE' } },
+      include: { image: { select: { reportId: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    return reports.map((report) => ({
+      id: report.id,
+      code: reportCode(report.seq),
+      text: report.text,
+      category: report.userCategory,
+      hasImage: report.image !== null,
+      failed: report.aiState === 'FAILED',
+      createdAt: report.createdAt.toISOString(),
+    }));
+  });
+
+  app.post<{ Params: { id: string } }>('/v1/admin/reports/:id/retry', async (request, reply) => {
+    const { count } = await db.report.updateMany({
+      where: { id: request.params.id, aiState: 'FAILED' },
+      data: { aiState: 'PENDING', aiAttempts: 0 },
+    });
+    if (count === 0) throw notFound('Failed report');
+    wakeWorker((error) => request.log.error(error));
+    return reply.code(202).send({ id: request.params.id });
   });
 
   app.get<{ Params: { id: string } }>('/v1/admin/issues/:id', (request) => loadDetail(request.params.id));
