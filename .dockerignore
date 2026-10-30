@@ -5,3 +5,15 @@ node_modules
 **/.env
 **/.env.*
 !**/.env.example
+coverage
+build
+.expo
+*.log
+*.apk
+*.aab
+*.keystore
+*.jks
+google-services.json
+apps/api/src/generated
+Dockerfile
+.dockerignore

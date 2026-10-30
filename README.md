@@ -143,3 +143,38 @@ pnpm eval:dedupe
 ```
 
 `pnpm eval:dedupe` scores duplicate detection against the labelled synthetic reports. It needs `pnpm db:seed` first. Re-seeding removes only synthetic rows and demo-account reports.
+
+## Deploying with Dokploy
+
+Deploy the repository as a Docker application. The included `Dockerfile` builds the web
+client and serves it from the API, so only one public service is needed.
+
+Use these Dokploy settings:
+
+| Setting | Value |
+|---|---|
+| Build method | Dockerfile |
+| Dockerfile path | `Dockerfile` |
+| Build context | Repository root |
+| Container port | `8080` |
+| Health check path | `/health` |
+| Start command | Leave blank; use the Dockerfile command |
+
+Add production environment variables in Dokploy's environment settings rather than
+committing an `.env` file. Set `NODE_ENV=production`, `PORT=8080`, the database URLs,
+`JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and any optional AI, Maps, Speech and
+`CORS_ORIGINS` values. Set `CORS_ORIGINS` to the public site origin if the API is
+served from a different domain; it can remain empty when the web client is served by
+the same container.
+
+After the first deploy, run the migration command once from Dokploy's terminal:
+
+```sh
+pnpm --filter @awaaz/api db:deploy
+```
+
+Only run the seed command if this is a new database and demo data is wanted:
+
+```sh
+pnpm --filter @awaaz/api db:seed
+```
