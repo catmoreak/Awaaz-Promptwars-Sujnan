@@ -60,7 +60,7 @@ function linkedChain(categories: Category[]): Category[] | null {
 
 function labelFor(issues: HotspotIssue[]): string {
   const withAddress = [...issues].sort((a, b) => b.priority.score - a.priority.score).find((issue) => issue.address);
-  return withAddress?.address ?? `Area around ${issues[0]?.title ?? 'this location'}`;
+  return withAddress?.address ?? [...issues].sort((a, b) => b.reportCount - a.reportCount)[0]?.title ?? 'Unnamed area';
 }
 
 function centerOf(issues: LatLng[]): LatLng {

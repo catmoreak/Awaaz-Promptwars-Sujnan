@@ -34,7 +34,7 @@ function rulesBrief(hotspot: HotspotDto, evidence: string[], teams: string[]): A
     hotspotId: hotspot.id,
     source: 'RULES',
     model: 'template-v1',
-    headline: `${hotspot.issueCount} open issues near ${hotspot.label}`,
+    headline: `${hotspot.issueCount} open issues in one area`,
     situation: `${hotspot.reportCount} reports cover ${names.join(', ')} in this area.`,
     suspectedCause: hotspot.linkedCauseChain
       ? `These categories often share one physical cause. This is a hypothesis to check on site.`

@@ -5,11 +5,16 @@ import { generateJson } from '../ai/llm';
 import { distanceMeters, type LatLng } from '../geo';
 
 export const MAX_DUPLICATE_DISTANCE_M = 200;
+/** Near-identical wording farther apart than this can still be two potholes on one road. */
+export const AUTO_MERGE_MAX_DISTANCE_M = 75;
 
-/** Measured against the labelled synthetic data with `pnpm eval:dedupe`. */
+/**
+ * `local` comes from a sweep over the labelled synthetic pairs, so it is tuned to a small sample.
+ * `semantic` is a starting point until `eval:dedupe` runs with real embeddings.
+ */
 export const THRESHOLDS = {
   semantic: { merge: 0.9, review: 0.75 },
-  local: { merge: 0.55, review: 0.3 },
+  local: { merge: 0.42, review: 0.25 },
 };
 
 export interface CandidateReport {
@@ -36,6 +41,7 @@ export interface RankedCandidate {
   issue: CandidateIssue;
   similarity: number;
   distanceM: number;
+  sameCategory: boolean;
   usedLocalEmbedding: boolean;
 }
 
@@ -56,16 +62,28 @@ export function rankCandidates(report: IncomingReport, issues: CandidateIssue[])
       if (distanceM > MAX_DUPLICATE_DISTANCE_M) return [];
       const scores = issue.reports.map((other) => similarityTo(report, other));
       const best = scores.reduce((top, score) => (score.value > top.value ? score : top), { value: -1, local: true });
-      return best.value < 0 ? [] : [{ issue, similarity: best.value, distanceM, usedLocalEmbedding: best.local }];
+      if (best.value < 0) return [];
+      return [
+        {
+          issue,
+          similarity: best.value,
+          distanceM,
+          sameCategory: issue.category === report.category,
+          usedLocalEmbedding: best.local,
+        },
+      ];
     })
     .sort((a, b) => b.similarity - a.similarity);
 }
 
 export function classify(candidate: RankedCandidate): 'MERGE' | 'REVIEW' | 'NEW' {
   const limits = candidate.usedLocalEmbedding ? THRESHOLDS.local : THRESHOLDS.semantic;
-  if (candidate.similarity >= limits.merge) return 'MERGE';
-  if (candidate.similarity >= limits.review) return 'REVIEW';
-  return 'NEW';
+  if (candidate.similarity < limits.review) return 'NEW';
+
+  // Similar text alone never merges a different category or a distant report: a person or model must agree.
+  const isCertain =
+    candidate.similarity >= limits.merge && candidate.sameCategory && candidate.distanceM <= AUTO_MERGE_MAX_DISTANCE_M;
+  return isCertain ? 'MERGE' : 'REVIEW';
 }
 
 const JudgeSchema = z.object({ sameIssue: z.boolean(), reason: z.string().min(3).max(240) });

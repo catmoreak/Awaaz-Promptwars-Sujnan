@@ -61,8 +61,22 @@ describe('classify', () => {
   const candidate = (similarity: number, usedLocalEmbedding: boolean) => ({
     issue: issue(BIN),
     distanceM: 10,
+    sameCategory: true,
     similarity,
     usedLocalEmbedding,
+  });
+
+  it('never auto-merges a different category, however similar the text is', () => {
+    expect(classify({ ...candidate(0.99, false), sameCategory: false })).toBe('REVIEW');
+  });
+
+  it('never auto-merges beyond the auto-merge distance', () => {
+    expect(classify({ ...candidate(0.99, false), distanceM: 76 })).toBe('REVIEW');
+    expect(classify({ ...candidate(0.99, false), distanceM: 75 })).toBe('MERGE');
+  });
+
+  it('does not review a weak match just because it is close', () => {
+    expect(classify({ ...candidate(0.2, false), distanceM: 1 })).toBe('NEW');
   });
 
   it('applies the stricter thresholds to real embeddings', () => {
@@ -72,8 +86,8 @@ describe('classify', () => {
   });
 
   it('applies the local thresholds to hashed embeddings', () => {
-    expect(classify(candidate(0.6, true))).toBe('MERGE');
-    expect(classify(candidate(0.4, true))).toBe('REVIEW');
+    expect(classify(candidate(0.45, true))).toBe('MERGE');
+    expect(classify(candidate(0.3, true))).toBe('REVIEW');
     expect(classify(candidate(0.1, true))).toBe('NEW');
   });
 });
@@ -92,18 +106,33 @@ describe('decideDuplicate', () => {
     expect(decision.reason).toContain('100% similar');
   });
 
-  it('keeps a doubtful match separate when no model can confirm it', async () => {
-    const report = incoming('Market entrance bin is full of waste today');
-    const { decision, mergeIntoIssueId } = await decideDuplicate(report, [issue(BIN)], { llmAvailable: false });
-    expect(mergeIntoIssueId).toBeNull();
-    expect(decision.decision).toBe('NEW_ISSUE');
-    expect(['NO_LLM_REVIEW', 'BELOW_THRESHOLD']).toContain(decision.method);
+  describe('with a similarity of 0.8, inside the review band', () => {
+    const report = incoming('New report', { embedding: [1, 0], embeddingModel: 'mistral-embed' });
+    const nearby = issue('Existing report', {
+      reports: [{ text: 'Existing report', embedding: [0.8, 0.6], embeddingModel: 'mistral-embed' }],
+    });
+
+    it('keeps the match separate when no model can confirm it', async () => {
+      const { decision, mergeIntoIssueId } = await decideDuplicate(report, [nearby], { llmAvailable: false });
+      expect(mergeIntoIssueId).toBeNull();
+      expect(decision).toMatchObject({ decision: 'NEW_ISSUE', method: 'NO_LLM_REVIEW', similarity: 0.8 });
+      expect(decision.reason).toContain('no AI model was available');
+    });
+
+    it('keeps the match separate when the model review fails', async () => {
+      const { decision, mergeIntoIssueId } = await decideDuplicate(report, [nearby], { llmAvailable: true });
+      expect(mergeIntoIssueId).toBeNull();
+      expect(decision).toMatchObject({ decision: 'NEW_ISSUE', method: 'NO_LLM_REVIEW' });
+      expect(decision.reason).toContain('AI review failed');
+    });
   });
 
-  it('keeps a match separate when the model review fails', async () => {
-    const report = incoming('Market entrance bin is overflowing and waste is on the road today');
-    const { mergeIntoIssueId, decision } = await decideDuplicate(report, [issue(BIN)], { llmAvailable: true });
-    expect(mergeIntoIssueId).toBeNull();
-    expect(decision.decision).toBe('NEW_ISSUE');
+  it('keeps a weak match separate without asking a model', async () => {
+    const report = incoming('New report', { embedding: [1, 0], embeddingModel: 'mistral-embed' });
+    const nearby = issue('Existing report', {
+      reports: [{ text: 'Existing report', embedding: [0.5, 0.866], embeddingModel: 'mistral-embed' }],
+    });
+    const { decision } = await decideDuplicate(report, [nearby], { llmAvailable: true });
+    expect(decision).toMatchObject({ decision: 'NEW_ISSUE', method: 'BELOW_THRESHOLD' });
   });
 });
