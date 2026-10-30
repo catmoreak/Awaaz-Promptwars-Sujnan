@@ -21,10 +21,10 @@ import {
 import { useRef, useState, type ChangeEvent } from 'react';
 import { ApiError, api } from '../api';
 import { useLanguage, type Language } from '../shared/language';
+import { DARK_MAP_STYLES, MAPS_KEY, useMapsAvailable } from '../shared/maps';
 import { useVoiceRecorder } from './useVoiceRecorder';
 import { MAX_RECORDING_MS } from './voice';
 
-const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
 const PHOTO_MAX_WIDTH = 1280;
 
 const CATEGORY_ICONS: Record<Category, LucideIcon> = {
@@ -62,6 +62,7 @@ function PinMap({ value, onChange }: { value: LatLng | null; onChange: (value: L
         <Map
           defaultCenter={{ lat: SERVICE_AREA.lat, lng: SERVICE_AREA.lng }}
           defaultZoom={14}
+          styles={DARK_MAP_STYLES}
           center={value ?? undefined}
           gestureHandling="greedy"
           clickableIcons={false}
@@ -82,6 +83,7 @@ export function NewReport({ onSent }: { onSent: (id: string) => void }) {
   const queryClient = useQueryClient();
   const config = useQuery({ queryKey: ['config'], queryFn: api.config });
   const voice = useVoiceRecorder();
+  const mapsAvailable = useMapsAvailable();
 
   const [clientRequestId] = useState(() => crypto.randomUUID());
   const [text, setText] = useState('');
@@ -230,13 +232,13 @@ export function NewReport({ onSent }: { onSent: (id: string) => void }) {
 
       <section className="form-block">
         <h2>{t.where}</h2>
-        {MAPS_KEY && <PinMap value={point} onChange={place} />}
+        {mapsAvailable && <PinMap value={point} onChange={place} />}
         <button type="button" className="button" disabled={locating} onClick={useMyLocation}>
           <LocateFixed size={18} aria-hidden="true" />
           {locating ? t.locating : t.useMyLocation}
         </button>
         {locationError && <p className="form-error">{locationError}</p>}
-        {!MAPS_KEY && (
+        {!mapsAvailable && (
           <div className="coordinate-row">
             <input
               aria-label={t.latitude}

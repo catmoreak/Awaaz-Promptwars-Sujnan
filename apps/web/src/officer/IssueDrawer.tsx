@@ -138,11 +138,11 @@ function ActionBar({ issue, onUpdated }: { issue: IssueDetailDto; onUpdated: () 
   const chosenTeamId = teamId || suggestedTeam?.id || '';
 
   const transition = useMutation({
-    mutationFn: () =>
+    mutationFn: (to: IssueStatus) =>
       api.transition(issue.id, {
-        to: target as IssueStatus,
+        to,
         note: note.trim() || undefined,
-        teamId: target === 'ASSIGNED' ? chosenTeamId : undefined,
+        teamId: to === 'ASSIGNED' ? chosenTeamId : undefined,
       }),
     onSuccess: () => {
       setTarget(null);
@@ -154,6 +154,12 @@ function ActionBar({ issue, onUpdated }: { issue: IssueDetailDto; onUpdated: () 
   const needsNote = target !== null && transitionNeedsNote(target);
   const canSubmit = target !== null && (!needsNote || note.trim().length > 0) && (target !== 'ASSIGNED' || chosenTeamId);
   const [primary, ...others] = issue.allowedTransitions;
+
+  // Only a team or a citizen note needs a second step. Everything else happens on the first click.
+  const choose = (status: IssueStatus) => {
+    if (status === 'ASSIGNED' || transitionNeedsNote(status)) setTarget(status);
+    else transition.mutate(status);
+  };
 
   return (
     <div className="action-bar">
@@ -179,7 +185,7 @@ function ActionBar({ issue, onUpdated }: { issue: IssueDetailDto; onUpdated: () 
           )}
           {transition.isError && <p className="form-error">{transition.error.message}</p>}
           <div className="action-row">
-            <button className="button button-primary" disabled={!canSubmit || transition.isPending} onClick={() => transition.mutate()}>
+            <button className="button button-primary" disabled={!canSubmit || transition.isPending} onClick={() => transition.mutate(target)}>
               {transition.isPending ? 'Saving' : actionLabel(target)}
             </button>
             <button className="button" onClick={() => setTarget(null)}>
@@ -190,15 +196,16 @@ function ActionBar({ issue, onUpdated }: { issue: IssueDetailDto; onUpdated: () 
       ) : (
         <div className="action-row">
           {primary && (
-            <button className="button button-primary" onClick={() => setTarget(primary)}>
+            <button className="button button-primary" disabled={transition.isPending} onClick={() => choose(primary)}>
               {actionLabel(primary)}
             </button>
           )}
           {others.map((status) => (
-            <button key={status} className="button" onClick={() => setTarget(status)}>
+            <button key={status} className="button" disabled={transition.isPending} onClick={() => choose(status)}>
               {actionLabel(status)}
             </button>
           ))}
+          {transition.isError && <p className="form-error">{transition.error.message}</p>}
         </div>
       )}
     </div>

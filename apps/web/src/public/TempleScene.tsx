@@ -124,7 +124,7 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     host.appendChild(renderer.domElement);
@@ -486,7 +486,7 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
     };
     window.addEventListener('pointermove', onPointerMove);
 
-    const clock = new THREE.Clock();
+    const startedAt = performance.now();
     let frame = 0;
     let announced = false;
     let lastDraw = 0;
@@ -502,7 +502,7 @@ export default function TempleScene({ onReady }: { onReady?: () => void }) {
 
     const render = () => {
       frame = requestAnimationFrame(render);
-      const elapsed = clock.getElapsedTime();
+      const elapsed = (performance.now() - startedAt) / 1000;
       if (elapsed - lastDraw < FRAME_SECONDS) return;
       lastDraw = elapsed;
       place(elapsed);

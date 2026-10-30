@@ -3,17 +3,9 @@ import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import { useEffect, useMemo } from 'react';
 import { BAND_LABELS } from './Hexagon';
 import { Loader } from '../shared/Loader';
-
-const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
+import { DARK_MAP_STYLES, MAPS_KEY, useMapsAvailable } from '../shared/maps';
 
 const BANDS = Object.keys(BAND_LABELS) as PriorityBand[];
-
-export const BAND_COLORS: Record<PriorityBand, string> = {
-  CRITICAL: '#B42318',
-  HIGH: '#C4560B',
-  MEDIUM: '#A47E00',
-  LOW: '#3F7564',
-};
 
 /** Checked for colour-blind separation against the dark map. */
 const TOWN_COLORS: Record<PriorityBand, string> = {
@@ -60,9 +52,9 @@ function GoogleOverlays({ data, onSelectIssue }: Omit<MapPanelProps, 'selectedIs
         new google.maps.Polygon({
           map,
           paths: cell.boundary,
-          fillColor: BAND_COLORS[cell.topBand],
-          fillOpacity: 0.34,
-          strokeColor: BAND_COLORS[cell.topBand],
+          fillColor: TOWN_COLORS[cell.topBand],
+          fillOpacity: 0.5,
+          strokeColor: TOWN_COLORS[cell.topBand],
           strokeWeight: 1,
         }),
       );
@@ -74,8 +66,8 @@ function GoogleOverlays({ data, onSelectIssue }: Omit<MapPanelProps, 'selectedIs
           new google.maps.Polyline({
             map,
             path: [...boundary, boundary[0] as google.maps.LatLngLiteral],
-            strokeColor: '#0A3D3B',
-            strokeWeight: 3,
+            strokeColor: '#FFFFFF',
+            strokeWeight: 2,
           }),
         );
       }
@@ -86,9 +78,9 @@ function GoogleOverlays({ data, onSelectIssue }: Omit<MapPanelProps, 'selectedIs
         map,
         center: { lat: issue.lat, lng: issue.lng },
         radius: 28,
-        fillColor: BAND_COLORS[issue.priority.band],
+        fillColor: TOWN_COLORS[issue.priority.band],
         fillOpacity: 1,
-        strokeColor: '#FFFFFF',
+        strokeColor: '#0F1318',
         strokeWeight: 2,
         clickable: true,
       });
@@ -197,16 +189,17 @@ function TownMap({ data, selectedIssueId, onSelectIssue }: MapPanelProps) {
 export function MapPanel(props: MapPanelProps) {
   const center = { lat: SERVICE_AREA.lat, lng: SERVICE_AREA.lng };
   const synthetic = props.data?.issues.some((issue) => issue.isSynthetic);
+  const mapsAvailable = useMapsAvailable();
 
-  if (MAPS_KEY) {
+  if (mapsAvailable) {
     return (
       <div className="map-frame">
-        <APIProvider apiKey={MAPS_KEY}>
-          <Map defaultCenter={center} defaultZoom={14} gestureHandling="greedy" clickableIcons={false} mapTypeControl={false} streetViewControl={false}>
+        <APIProvider apiKey={MAPS_KEY as string}>
+          <Map defaultCenter={center} defaultZoom={14} styles={DARK_MAP_STYLES} gestureHandling="greedy" clickableIcons={false} disableDefaultUI>
             <GoogleOverlays data={props.data} onSelectIssue={props.onSelectIssue} />
           </Map>
         </APIProvider>
-        <MapLegend colors={BAND_COLORS} />
+        <MapLegend colors={TOWN_COLORS} />
         {synthetic && <p className="synthetic-flag">Synthetic demo data</p>}
       </div>
     );
