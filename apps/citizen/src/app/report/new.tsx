@@ -13,12 +13,17 @@ import { MapPicker } from '@/components/MapPicker';
 import type { LatLng } from '@/components/CoordinateFields';
 import { Button, ErrorText, Heading, Muted } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
-import { useLanguage } from '@/lib/i18n';
+import { useLanguage, type Language } from '@/lib/i18n';
 import { useVoiceRecorder } from '@/lib/useVoiceRecorder';
 import { MAX_RECORDING_MS } from '@/lib/voice';
 import { color, font } from '@/theme';
 
 const IMAGE_MAX_WIDTH = 1280;
+
+const VOICE_OPTIONS: { id: Language; label: string }[] = [
+  { id: 'kn', label: 'ಕನ್ನಡ' },
+  { id: 'en', label: 'English' },
+];
 
 async function preparePhoto(uri: string) {
   const context = ImageManipulator.manipulate(uri);
@@ -52,6 +57,7 @@ export default function NewReport() {
   const [address, setAddress] = useState('');
   const [photo, setPhoto] = useState<{ uri: string; base64: string } | null>(null);
   const [viaVoice, setViaVoice] = useState(false);
+  const [voiceLanguage, setVoiceLanguage] = useState<Language>(language);
   const [formError, setFormError] = useState<string | null>(null);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -70,7 +76,7 @@ export default function NewReport() {
   const stopRecording = async () => {
     if (recordingTimer.current) clearTimeout(recordingTimer.current);
     const clip = await voice.stop();
-    if (clip) transcribe.mutate(clip);
+    if (clip) transcribe.mutate({ ...clip, language: voiceLanguage });
   };
 
   const stopRef = useRef(stopRecording);
@@ -162,6 +168,22 @@ export default function NewReport() {
             value={text}
           />
           {voiceAvailable === false && <Muted>{t.voiceOff}</Muted>}
+          {voiceAvailable && (
+            <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={t.voiceLanguage}>
+              {VOICE_OPTIONS.map((option) => (
+                <Pressable
+                  key={option.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: voiceLanguage === option.id }}
+                  disabled={voice.recording}
+                  onPress={() => setVoiceLanguage(option.id)}
+                  style={[styles.chip, styles.flex, voiceLanguage === option.id && styles.chipSelected]}
+                >
+                  <Text style={[styles.chipText, styles.centered, voiceLanguage === option.id && styles.chipTextSelected]}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
           {voiceAvailable && (
             <Button
               kind="quiet"
@@ -276,4 +298,5 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: color.monsoon, borderColor: color.monsoon },
   chipText: { color: color.ink, fontFamily: font.medium, fontSize: 15 },
   chipTextSelected: { color: '#FFFFFF' },
+  centered: { textAlign: 'center' },
 });

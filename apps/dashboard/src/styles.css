@@ -439,6 +439,15 @@ textarea {
   line-height: 1.3;
 }
 
+.queue-reason::first-letter {
+  text-transform: uppercase;
+}
+
+/* Leaves room for the Compare checkbox in the corner of each row. */
+.queue-open .queue-meta {
+  padding-right: 72px;
+}
+
 .queue-meta {
   display: flex;
   flex-wrap: wrap;
@@ -513,8 +522,11 @@ textarea {
   font-weight: 650;
 }
 
+/* Stays in view, because the two issues being compared can sit far down the queue. */
 .compare-panel {
-  position: relative;
+  position: sticky;
+  top: 8px;
+  z-index: 5;
   display: grid;
   gap: 6px;
   margin: 0 12px 12px;
@@ -695,6 +707,16 @@ tbody th {
 
 .report-head strong {
   color: var(--ink);
+}
+
+.report-contact {
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+
+.report-contact a {
+  color: var(--monsoon);
+  font-weight: 550;
 }
 
 .report-voice {

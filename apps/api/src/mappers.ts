@@ -87,7 +87,11 @@ export function toAdminReport(report: Report & { user: User | null; image: { rep
     source: report.source,
     channel: report.channel,
     viaVoice: report.viaVoice,
-    reporterName: report.user?.name ?? null,
+    reporter: report.user && {
+      name: report.user.name,
+      phone: report.user.phone,
+      homeAddress: [report.user.addressLine, report.user.locality, report.user.pincode].filter(Boolean).join(', ') || null,
+    },
     address: report.address,
     lat: report.lat,
     lng: report.lng,

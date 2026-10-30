@@ -305,7 +305,7 @@ export async function adminRoutes(app: FastifyInstance) {
       duplicatesMerged: reports.filter((report) => report.issueId).length - issues.length,
       reportsTotal: reports.length,
       medianHoursToResolve: hoursToResolve[Math.floor(hoursToResolve.length / 2)] ?? null,
-      aiPending: reports.filter((report) => report.aiState === 'PENDING' || report.aiState === 'PROCESSING').length,
+      aiPending: reports.filter((report) => report.aiState !== 'DONE').length,
       rulesFallbackReports: reports.filter((report) => report.aiSource === 'RULES').length,
       byCategory: CATEGORIES.map((category) => ({
         category,

@@ -36,7 +36,8 @@ function toCitizenReport(report: CitizenReport): CitizenReportDto {
     lng: report.lng,
     hasImage: report.image !== null,
     createdAt: report.createdAt.toISOString(),
-    processing: report.aiState === 'PENDING' || report.aiState === 'PROCESSING',
+    // A failed report is retried, so the citizen keeps seeing that it is being checked.
+    processing: report.aiState !== 'DONE',
     analysis: toAnalysis(report),
     issue: issue && {
       id: issue.id,
@@ -112,8 +113,7 @@ export async function citizenRoutes(app: FastifyInstance) {
 
   app.post('/v1/transcribe', REPORT_RATE_LIMIT, async (request) => {
     await requireUser(request);
-    const { base64, mime } = TranscribeSchema.parse(request.body);
     // The audio is used for this request only and is never stored.
-    return transcribeAudio(base64, mime);
+    return transcribeAudio(TranscribeSchema.parse(request.body));
   });
 }

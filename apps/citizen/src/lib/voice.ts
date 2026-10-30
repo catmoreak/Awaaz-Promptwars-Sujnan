@@ -1,6 +1,6 @@
 import type { TranscribeInput } from '@awaaz/shared';
 
-export type VoiceClip = TranscribeInput;
+export type VoiceClip = Omit<TranscribeInput, 'language'>;
 
 export interface VoiceRecorder {
   recording: boolean;
@@ -9,4 +9,5 @@ export interface VoiceRecorder {
   stop: () => Promise<VoiceClip | null>;
 }
 
-export const MAX_RECORDING_MS = 60_000;
+/** Just under Google's one-minute limit for a single recognition request. */
+export const MAX_RECORDING_MS = 55_000;

@@ -2,7 +2,7 @@ import { CATEGORY_LABELS, STATUS_LABELS, type CitizenReportDto } from '@awaaz/sh
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { ChevronRight, LogOut, Plus } from 'lucide-react-native';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, ErrorText, Heading, Hexagon, Muted } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -83,7 +83,9 @@ export default function Home() {
               <ErrorText>{t.loadFailed}</ErrorText>
               <Button kind="quiet" label={t.retry} onPress={() => void reports.refetch()} />
             </View>
-          ) : reports.isPending ? undefined : (
+          ) : reports.isPending ? (
+            <ActivityIndicator color={color.monsoon} accessibilityLabel={t.loading} />
+          ) : (
             <Body>{t.noReports}</Body>
           )
         }

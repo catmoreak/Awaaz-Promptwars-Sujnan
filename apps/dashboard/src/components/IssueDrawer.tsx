@@ -75,6 +75,18 @@ function ReportCard({
         )}
       </div>
       <p lang={analysis?.language === 'Kannada' ? 'kn' : undefined}>{report.text}</p>
+      {report.reporter && (
+        <p className="report-contact">
+          {report.reporter.name}
+          {report.reporter.phone && (
+            <>
+              {', '}
+              <a href={`tel:+91${report.reporter.phone}`}>{report.reporter.phone}</a>
+            </>
+          )}
+          {report.reporter.homeAddress && `, ${report.reporter.homeAddress}`}
+        </p>
+      )}
 
       {analysis ? (
         <dl className="analysis">

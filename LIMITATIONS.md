@@ -15,6 +15,8 @@
 - **There is no live link to any government system.** Awaaz has never been deployed with a municipality.
 - **Staff entry is manual.** Calls, walk-ins and social posts reach Awaaz only if staff type or paste them. There is no phone, WhatsApp or social media integration.
 - **Citizen status updates are polled.** The app refreshes every few seconds. There are no push notifications.
+- **Phone numbers are not verified.** There is no OTP, so a person can register a number that is not theirs. Forgotten passwords cannot be reset yet.
+- **The officer account is a shared demo login.** It uses a simple password chosen for the demo, and it must be changed before anyone relies on this. There are no per-officer accounts.
 
 ## Reduced modes
 
@@ -33,8 +35,8 @@ Awaaz keeps working when a service is missing, and says so on screen.
 - **Safety keywords.** A keyword match forces the top hazard level. This protects against a model missing a live wire, but a report could contain those words without real danger, or describe real danger in other words.
 - **False urgency.** Someone can overstate a problem. The prompt tells the model to ignore tone, but this reduces the risk without removing it.
 - **Duplicate errors.** Two similar problems close together can merge, and two descriptions of one problem can stay apart. Officers can merge or separate issues manually.
-- **Translation.** Kannada and other languages can lose meaning in translation, which affects category, severity and matching.
-- **Voice.** Mistral's language documentation does not name Kannada or Tulu, so neither can be assumed to work. The transcript is always editable, and typing always works.
+- **Translation.** Kannada can lose meaning in translation, which affects category, severity and matching.
+- **Voice.** Only Kannada and English are supported, so Tulu, Konkani and other languages common in the area are not. Kannada was tested on a computer-generated clip, not on human speakers: Google returned the sentence with one word wrong, turning "danger" into "fear", which shows how a transcript can change the meaning of a report. Accents, background noise and mixed Kannada and English speech can reduce accuracy further. The transcript is always editable, and typing always works.
 - **Photos.** The model comments on whether a photo matches the report. It cannot prove when or where a photo was taken.
 - **Suspected causes.** Hotspot briefs offer hypotheses from nearby reports. Only an on-site check can confirm a shared cause.
 - **Hotspots show where people report.** Areas with fewer smartphones, or less trust in reporting, will look calmer than they are. Report volume is not the same as need.
@@ -52,8 +54,8 @@ Awaaz keeps working when a service is missing, and says so on screen.
 ## What I would do next
 
 1. Test with real, anonymised reports and officers, then recalibrate thresholds and weights.
-2. Measure Kannada and Tulu voice accuracy with real speakers.
+2. Measure Kannada voice accuracy with real speakers, and try Google's V2 Chirp models if V1 falls short.
 3. Add WhatsApp and phone intake, because many citizens will not install an app.
 4. Add push notifications, and let citizens confirm whether a fix actually worked.
 5. Add road-aware clustering and ward boundaries.
-6. Add officer roles, audit reviews and session revocation before any real deployment.
+6. Add OTP phone verification, password reset, individual officer accounts, audit reviews and session revocation before any real deployment.

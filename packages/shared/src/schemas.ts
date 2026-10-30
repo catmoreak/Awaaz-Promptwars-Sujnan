@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { CATEGORIES, ISSUE_STATUSES, LIMITS } from './domain';
 
 const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'] as const;
-const AUDIO_MIMES = ['audio/wav', 'audio/mp4', 'audio/m4a', 'audio/aac', 'audio/mpeg', 'audio/ogg'] as const;
+/** WAV from the browser and AMR-WB from Android. Google Speech-to-Text does not accept Android's usual AAC. */
+const AUDIO_MIMES = ['audio/wav', 'audio/amr-wb'] as const;
+export const VOICE_LANGUAGES = ['kn', 'en'] as const;
 
 const base64Limit = (bytes: number) => Math.ceil((bytes * 4) / 3) + 4;
 
@@ -34,6 +36,7 @@ export type StaffReportInput = z.input<typeof StaffReportSchema>;
 export const TranscribeSchema = z.object({
   base64: z.string().min(16).max(base64Limit(LIMITS.audioBytesMax)),
   mime: z.enum(AUDIO_MIMES),
+  language: z.enum(VOICE_LANGUAGES),
 });
 export type TranscribeInput = z.input<typeof TranscribeSchema>;
 

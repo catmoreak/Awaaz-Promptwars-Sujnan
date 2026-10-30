@@ -3,7 +3,7 @@ import { processReport } from './process';
 
 const SWEEP_INTERVAL_MS = 15_000;
 const STALE_CLAIM_MINUTES = 5;
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 5;
 
 let draining = false;
 let wakeRequested = false;
@@ -73,8 +73,13 @@ export function wakeWorker(log?: (error: unknown) => void): void {
   void drainQueue(log).catch(log ?? console.error);
 }
 
+/** Failures here are database outages, not bad reports, so a restart gives each report a fresh chance. */
+async function requeueFailed(): Promise<void> {
+  await db.report.updateMany({ where: { aiState: 'FAILED' }, data: { aiState: 'PENDING', aiAttempts: 0 } });
+}
+
 export function startWorker(log: (error: unknown) => void): void {
-  wakeWorker(log);
+  void requeueFailed().catch(log).finally(() => wakeWorker(log));
   timer = setInterval(() => wakeWorker(log), SWEEP_INTERVAL_MS);
   timer.unref();
 }

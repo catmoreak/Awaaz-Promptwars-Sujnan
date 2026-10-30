@@ -63,7 +63,7 @@ Immediate danger to life sets a minimum score of 75, so a live wire with one rep
 
 **Hotspots** group open issues by H3 resolution 9 cell and join touching cells into one area. An area becomes a hotspot with three or more issues, or with two issues that fit a known cause chain, such as a blocked drain, waterlogging and road damage. Past resolved issues in the same area flag a problem as recurring. On request, a model writes a short action brief using only the listed evidence, and any suspected cause is worded as a hypothesis to check on site.
 
-**Voice** goes through Mistral Voxtral, with OpenRouter as a fallback. The citizen sees the transcript and can correct it before sending. Audio is not stored.
+**Voice** uses Google Cloud Speech-to-Text for Kannada (`kn-IN`) and English (`en-IN`). The citizen chooses the language before speaking, because Google documents automatic language detection for voice commands only. The citizen sees the transcript and can correct it before sending. Audio is not stored. Android records AMR-WB and the website sends WAV, both at 16 kHz mono, because the API does not accept Android's usual AAC.
 
 ## Running it locally
 
@@ -93,7 +93,13 @@ pnpm citizen
 | Officer dashboard | http://localhost:5173 |
 | Citizen web | http://localhost:8081 |
 
-The app runs without any AI or Maps keys, in a clearly labelled reduced mode. With `ALLOW_DEMO_LOGIN=true`, both apps offer a demo sign-in. The API refuses to start if that setting is on in production.
+The app runs without any AI or Maps keys, in a clearly labelled reduced mode.
+
+### Accounts
+
+Citizens register in the app with their name, mobile number, password and home address, then sign in with their mobile number and password. Officers sign in to the dashboard with the email and password set by `ADMIN_EMAIL` and `ADMIN_PASSWORD`. The API creates that account when it starts, and stores only a salted scrypt hash.
+
+`pnpm db:seed` also creates a citizen who owns some synthetic reports: mobile `9000000000`, password `demo1234`.
 
 ### Configuration
 
@@ -101,30 +107,28 @@ The app runs without any AI or Maps keys, in a clearly labelled reduced mode. Wi
 |---|---|
 | `DATABASE_URL`, `DIRECT_URL` | Postgres. Use the pooled URL for the first and the direct URL for migrations. |
 | `JWT_SECRET` | Signing sessions. |
-| `MISTRAL_API_KEY` | Report analysis, embeddings and voice. |
-| `OPENROUTER_API_KEY` | Fallback for analysis, briefs and voice. |
+| `MISTRAL_API_KEY` | Report analysis, embeddings and duplicate review. |
+| `OPENROUTER_API_KEY` | Fallback for analysis and briefs. |
+| `GOOGLE_SPEECH_API_KEY` | Voice input. |
 | `GOOGLE_MAPS_SERVER_KEY` | Addresses and nearby schools or hospitals. |
-| `GOOGLE_OAUTH_CLIENT_IDS` | Google Sign-In. List the web client ID. |
-| `ADMIN_EMAILS` | Google accounts allowed into the officer dashboard. |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | The officer dashboard account. |
 | `CORS_ORIGINS` | The sites allowed to call the API. |
 
 ### Google Cloud setup
 
-1. Enable the Maps JavaScript API, Maps SDK for Android, Geocoding API and Places API (New).
-2. Create three API keys and restrict each one: web by HTTP referrer, Android by package `com.awaaz.citizen` and SHA-1, and server by API.
-3. Create an OAuth **Web** client for the web apps and the API.
-4. Create an OAuth **Android** client with package `com.awaaz.citizen` and the SHA-1 of your build. Android sign-in fails with error code 10 if this is missing.
+1. Enable the Cloud Speech-to-Text API, Maps JavaScript API, Maps SDK for Android, Geocoding API and Places API (New).
+2. Create four API keys and restrict each one: web by HTTP referrer, Android by package `com.awaaz.citizen` and SHA-1, server maps by API, and speech to the Cloud Speech-to-Text API only.
 
 ### Building the Android APK
 
-Native modules are used, so Google Sign-In needs a real build rather than Expo Go. The API must be reachable from the phone, so set `EXPO_PUBLIC_API_URL` to a hosted URL or your computer's LAN address before building.
+The API must be reachable from the phone, so set `EXPO_PUBLIC_API_URL` to a hosted URL or your computer's LAN address before building.
 
 ```sh
 cd apps/citizen
 npx eas-cli@latest build --profile preview --platform android
 ```
 
-Add the APK's SHA-1 from the EAS dashboard to your Android API key and OAuth client.
+Add the APK's SHA-1 from the EAS dashboard to your Android API key.
 
 ## Tests
 

@@ -10,7 +10,8 @@ const HOUR_MS = 3_600_000;
 /** Removes synthetic rows and demo-account test reports, so reseeding can never touch a real citizen's report. */
 async function clearSynthetic() {
   await db.report.deleteMany({ where: { OR: [{ isSynthetic: true }, { user: { isDemo: true } }] } });
-  await db.issue.deleteMany({ where: { isSynthetic: true } });
+  // An issue with no reports left is a leftover. Merged issues are empty on purpose, so they stay.
+  await db.issue.deleteMany({ where: { OR: [{ isSynthetic: true }, { reports: { none: {} }, mergedIntoId: null }] } });
   await db.hotspotBrief.deleteMany();
 }
 
@@ -122,6 +123,7 @@ async function main() {
     db.report.count({ where: { isSynthetic: true, aiState: { not: 'DONE' } } }),
   ]);
   console.log(`Seeded ${reports} synthetic reports into ${issues} issues. Not processed: ${failed}.`);
+  if (failed > 0) process.exitCode = 1;
 }
 
 try {

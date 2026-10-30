@@ -40,7 +40,7 @@ function encodeWav(samples: Float32Array): Uint8Array {
   return new Uint8Array(buffer);
 }
 
-/** Browsers record WebM, which speech services do not all accept, so the clip becomes 16 kHz mono WAV. */
+/** Browser recording formats vary, so every clip becomes the same 16 kHz mono WAV. */
 async function toWavClip(blob: Blob): Promise<VoiceClip> {
   const context = new AudioContext();
   const decoded = await context.decodeAudioData(await blob.arrayBuffer());

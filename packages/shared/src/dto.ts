@@ -18,8 +18,7 @@ export interface AuthResponse {
 
 export interface TranscribeResponse {
   transcript: string;
-  language: string;
-  english: string;
+  language: 'kn' | 'en';
   model: string;
 }
 
@@ -107,7 +106,7 @@ export interface AdminReportDto {
   source: 'MOBILE' | 'WEB' | 'STAFF' | 'SEED';
   channel: string | null;
   viaVoice: boolean;
-  reporterName: string | null;
+  reporter: { name: string; phone: string | null; homeAddress: string | null } | null;
   address: string | null;
   lat: number;
   lng: number;

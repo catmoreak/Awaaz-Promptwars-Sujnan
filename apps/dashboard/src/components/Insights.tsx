@@ -1,4 +1,4 @@
-import { CATEGORY_LABELS, type ActionBriefDto, type HotspotDto, type StatsResponse } from '@awaaz/shared';
+import { CATEGORY_LABELS, type ActionBriefDto, type HotspotDto, type IssueSummaryDto, type StatsResponse } from '@awaaz/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Repeat2 } from 'lucide-react';
 import { useState } from 'react';
@@ -34,7 +34,15 @@ function BriefBody({ brief }: { brief: ActionBriefDto }) {
   );
 }
 
-function HotspotCard({ hotspot, onSelectIssue }: { hotspot: HotspotDto; onSelectIssue: (id: string) => void }) {
+function HotspotCard({
+  hotspot,
+  issues,
+  onSelectIssue,
+}: {
+  hotspot: HotspotDto;
+  issues: IssueSummaryDto[];
+  onSelectIssue: (id: string) => void;
+}) {
   const [wantBrief, setWantBrief] = useState(false);
   const brief = useQuery({
     queryKey: ['brief', hotspot.id, hotspot.reportCount],
@@ -64,11 +72,13 @@ function HotspotCard({ hotspot, onSelectIssue }: { hotspot: HotspotDto; onSelect
         </p>
       )}
       <div className="hotspot-issues">
-        {hotspot.issueIds.map((id, index) => (
-          <button key={id} className="text-button" onClick={() => onSelectIssue(id)}>
-            Issue {index + 1}
-          </button>
-        ))}
+        {issues
+          .filter((issue) => hotspot.issueIds.includes(issue.id))
+          .map((issue) => (
+            <button key={issue.id} className="text-button" title={issue.title} onClick={() => onSelectIssue(issue.id)}>
+              {issue.code}: {CATEGORY_LABELS[issue.category].en}
+            </button>
+          ))}
       </div>
 
       {!wantBrief && (
@@ -162,7 +172,7 @@ export function Insights({ onSelectIssue }: { onSelectIssue: (id: string) => voi
         {map.data?.hotspots.length === 0 && <p className="empty">No hotspots right now. Areas appear here once related issues cluster.</p>}
         <div className="hotspots">
           {map.data?.hotspots.map((hotspot) => (
-            <HotspotCard key={hotspot.id} hotspot={hotspot} onSelectIssue={onSelectIssue} />
+            <HotspotCard key={hotspot.id} hotspot={hotspot} issues={map.data.issues} onSelectIssue={onSelectIssue} />
           ))}
         </div>
       </section>

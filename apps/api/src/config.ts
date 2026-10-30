@@ -22,10 +22,9 @@ const EnvSchema = z.object({
   MISTRAL_API_KEY: z.string().default(''),
   MISTRAL_CHAT_MODEL: z.string().default('mistral-small-latest'),
   MISTRAL_EMBEDDING_MODEL: z.string().default('mistral-embed'),
-  MISTRAL_TRANSCRIBE_MODEL: z.string().default('voxtral-mini-transcribe-3-0'),
   OPENROUTER_API_KEY: z.string().default(''),
   OPENROUTER_CHAT_MODEL: z.string().default('mistralai/mistral-small-2603'),
-  OPENROUTER_AUDIO_MODEL: z.string().default('mistralai/voxtral-small-24b-2507'),
+  GOOGLE_SPEECH_API_KEY: z.string().default(''),
   SERVICE_CENTER_LAT: z.coerce.number().default(SERVICE_AREA.lat),
   SERVICE_CENTER_LNG: z.coerce.number().default(SERVICE_AREA.lng),
   SERVICE_RADIUS_KM: z.coerce.number().positive().default(SERVICE_AREA.radiusKm),
@@ -35,6 +34,6 @@ export const env = EnvSchema.parse(process.env);
 
 export const features = {
   llm: Boolean(env.MISTRAL_API_KEY || env.OPENROUTER_API_KEY),
-  voice: Boolean(env.MISTRAL_API_KEY || env.OPENROUTER_API_KEY),
+  voice: Boolean(env.GOOGLE_SPEECH_API_KEY),
   places: Boolean(env.GOOGLE_MAPS_SERVER_KEY),
 };
