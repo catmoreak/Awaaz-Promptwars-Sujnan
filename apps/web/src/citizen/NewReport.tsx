@@ -259,7 +259,7 @@ export function NewReport({ onSent }: { onSent: (id: string) => void }) {
           <label className="button photo-input">
             <ImagePlus size={18} aria-hidden="true" />
             {t.choosePhoto}
-            <input type="file" accept="image/*" capture="environment" onChange={(event) => void choosePhoto(event)} />
+            <input type="file" accept="image/*" onChange={(event) => void choosePhoto(event)} />
           </label>
         )}
         {photoError && <p className="form-error">{photoError}</p>}
