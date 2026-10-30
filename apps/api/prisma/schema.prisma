@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CITIZEN
+  ADMIN
+}
+
+enum Category {
+  WATERLOGGING
+  DRAINAGE
+  ROAD_DAMAGE
+  WASTE
+  STREETLIGHT
+  WATER_SUPPLY
+  ELECTRICAL_HAZARD
+  PUBLIC_SERVICE
+  OTHER
+}
+
+enum IssueStatus {
+  SUBMITTED
+  TRIAGED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+}
+
+enum AiState {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum AiSource {
+  LLM
+  RULES
+}
+
+enum ReportSource {
+  MOBILE
+  WEB
+  STAFF
+  SEED
+}
+
+enum EventType {
+  CREATED
+  STATUS_CHANGED
+  ASSIGNED
+  REPORT_LINKED
+  REPORT_DETACHED
+  MERGED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  googleSub String?  @unique
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  role      Role     @default(CITIZEN)
+  isDemo    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reports Report[]
+  events  IssueEvent[]
+}
+
+model Team {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  categories Category[]
+  createdAt  DateTime   @default(now())
+
+  issues Issue[]
+}
+
+/// One real-world problem. Many citizen reports can point at the same issue.
+model Issue {
+  id                String      @id @default(cuid())
+  seq               Int         @unique @default(autoincrement())
+  title             String
+  summary           String
+  category          Category
+  status            IssueStatus @default(SUBMITTED)
+  lat               Float
+  lng               Float
+  address           String?
+  h3Res9            String
+  h3Res10           String
+  reportCount       Int         @default(1)
+  hazard            Int
+  exposure          Int
+  serviceDisruption Boolean     @default(false)
+  /// Null means the Places lookup did not run. An empty array means it ran and found nothing.
+  sensitiveSites    Json?
+  isSynthetic       Boolean     @default(false)
+  firstReportedAt   DateTime
+  resolvedAt        DateTime?
+  mergedIntoId      String?
+  teamId            String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  team    Team?        @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  reports Report[]
+  events  IssueEvent[]
+
+  @@index([status])
+  @@index([h3Res9])
+  @@index([h3Res10])
+  @@index([mergedIntoId])
+}
+
+model Report {
+  id              String       @id @default(cuid())
+  seq             Int          @unique @default(autoincrement())
+  clientRequestId String?
+  userId          String?
+  issueId         String?
+  source          ReportSource
+  channel         String?
+  viaVoice        Boolean      @default(false)
+  text            String
+  userCategory    Category
+  lat             Float
+  lng             Float
+  address         String?
+  h3Res9          String
+  h3Res10         String
+  isSynthetic     Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  aiState     AiState   @default(PENDING)
+  aiAttempts  Int       @default(0)
+  aiError     String?
+  aiClaimedAt DateTime?
+
+  aiSource          AiSource?
+  aiModel           String?
+  aiCategory        Category?
+  aiConfidence      Float?
+  aiSummary         String?
+  aiReasoning       String?
+  aiImageNote       String?
+  language          String?
+  englishText       String?
+  hazard            Int?
+  exposure          Int?
+  serviceDisruption Boolean?
+  embedding         Float[]
+  embeddingModel    String?
+  dedupe            Json?
+
+  user  User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  issue Issue?       @relation(fields: [issueId], references: [id], onDelete: SetNull)
+  image ReportImage?
+
+  @@unique([userId, clientRequestId])
+  @@index([aiState, createdAt])
+  @@index([userId, createdAt])
+  @@index([issueId])
+}
+
+model ReportImage {
+  reportId  String   @id
+  mime      String
+  bytes     Bytes
+  createdAt DateTime @default(now())
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+model IssueEvent {
+  id         String       @id @default(cuid())
+  issueId    String
+  actorId    String?
+  type       EventType
+  fromStatus IssueStatus?
+  toStatus   IssueStatus?
+  message    String
+  note       String?
+  createdAt  DateTime     @default(now())
+
+  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([issueId, createdAt])
+}
+
+/// Cached by a hash of the hotspot's contents, so a brief regenerates only when its evidence changes.
+model HotspotBrief {
+  hotspotId   String   @id
+  contentHash String
+  brief       Json
+  createdAt   DateTime @default(now())
+}
