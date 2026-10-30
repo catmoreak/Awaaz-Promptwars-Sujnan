@@ -53,8 +53,8 @@ export function Button({ label, onPress, kind = 'primary', disabled, busy, icon,
         style,
       ]}
     >
-      {busy ? <ActivityIndicator color={primary ? '#FFFFFF' : color.monsoon} size="small" /> : icon}
-      <Text style={[styles.buttonLabel, { color: primary ? '#FFFFFF' : color.monsoon }]}>{label}</Text>
+      {busy ? <ActivityIndicator color={primary ? color.onAccent : color.ink} size="small" /> : icon}
+      <Text style={[styles.buttonLabel, { color: primary ? color.onAccent : color.ink }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -81,11 +81,11 @@ const styles = StyleSheet.create({
   error: { color: color.critical, fontFamily: font.medium, fontSize: 15 },
   button: {
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 14,
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-    minHeight: 50,
+    minHeight: 52,
     paddingHorizontal: 18,
   },
   primary: { backgroundColor: color.monsoon },

@@ -1,34 +1,32 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { LogOut } from 'lucide-react';
-import { useState } from 'react';
+import { ChartNoAxesColumn, ListOrdered, LogOut, Map as MapIcon, Plus } from 'lucide-react';
+import { useState, type ComponentType } from 'react';
 import { ApiError, api, session } from './api';
 import { AddReport } from './components/AddReport';
 import { Hexagon } from './components/Hexagon';
-import { Insights } from './components/Insights';
 import { IssueDrawer } from './components/IssueDrawer';
+import { Loader } from './components/Loader';
 import { Login } from './components/Login';
-import { Triage } from './components/Triage';
+import { MapPage } from './components/MapPage';
+import { Queue } from './components/Queue';
+import { Trends } from './components/Trends';
 
-type View = 'triage' | 'insights' | 'add';
+type View = 'queue' | 'map' | 'trends' | 'add';
 
-const VIEWS: { id: View; label: string }[] = [
-  { id: 'triage', label: 'Priority queue' },
-  { id: 'insights', label: 'Hotspots and trends' },
-  { id: 'add', label: 'Add a report' },
+const VIEWS: { id: View; label: string; icon: ComponentType<{ size?: number; 'aria-hidden'?: boolean }> }[] = [
+  { id: 'queue', label: 'Priority queue', icon: ListOrdered },
+  { id: 'map', label: 'Map and hotspots', icon: MapIcon },
+  { id: 'trends', label: 'Trends', icon: ChartNoAxesColumn },
+  { id: 'add', label: 'Add a report', icon: Plus },
 ];
 
 export function App() {
   const queryClient = useQueryClient();
   const [signedIn, setSignedIn] = useState(Boolean(session.get()));
-  const [view, setView] = useState<View>('triage');
+  const [view, setView] = useState<View>('queue');
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
 
-  const me = useQuery({
-    queryKey: ['me'],
-    queryFn: api.me,
-    enabled: signedIn,
-    retry: false,
-  });
+  const me = useQuery({ queryKey: ['me'], queryFn: api.me, enabled: signedIn, retry: false });
 
   const signOut = () => {
     session.clear();
@@ -37,39 +35,37 @@ export function App() {
   };
 
   const sessionExpired = me.error instanceof ApiError && me.error.status === 401;
-  if (!signedIn || sessionExpired) {
-    return <Login onSignedIn={() => setSignedIn(true)} />;
-  }
+  if (!signedIn || sessionExpired) return <Login onSignedIn={() => setSignedIn(true)} />;
+  if (me.isPending) return <Loader fullScreen />;
 
   return (
     <div className="shell">
-      <header className="topbar">
+      <aside className="sidebar">
         <div className="brand">
           <Hexagon className="brand-mark" />
-          <div>
-            <strong>Awaaz</strong>
-            <span>Moodbidri officer desk</span>
-          </div>
+          <span>Awaaz</span>
         </div>
         <nav aria-label="Main">
-          {VIEWS.map((item) => (
-            <button key={item.id} className="nav-item" aria-current={view === item.id ? 'page' : undefined} onClick={() => setView(item.id)}>
-              {item.label}
+          {VIEWS.map(({ id, label, icon: Icon }) => (
+            <button key={id} className="nav-item" aria-current={view === id ? 'page' : undefined} onClick={() => setView(id)}>
+              <Icon size={18} aria-hidden />
+              <span>{label}</span>
             </button>
           ))}
         </nav>
         <div className="account">
-          <span>{me.data?.name}</span>
+          <span className="account-name">{me.data?.name}</span>
           <button className="icon-button" onClick={signOut} aria-label="Sign out" title="Sign out">
             <LogOut size={18} />
           </button>
         </div>
-      </header>
+      </aside>
 
-      <main className="workspace">
-        {view === 'triage' && <Triage selectedIssueId={selectedIssueId} onSelectIssue={setSelectedIssueId} />}
-        {view === 'insights' && <Insights onSelectIssue={setSelectedIssueId} />}
-        {view === 'add' && <AddReport onAdded={() => setView('triage')} />}
+      <main className="page">
+        {view === 'queue' && <Queue selectedIssueId={selectedIssueId} onSelectIssue={setSelectedIssueId} />}
+        {view === 'map' && <MapPage selectedIssueId={selectedIssueId} onSelectIssue={setSelectedIssueId} />}
+        {view === 'trends' && <Trends />}
+        {view === 'add' && <AddReport onAdded={() => setView('queue')} />}
       </main>
 
       {selectedIssueId && (

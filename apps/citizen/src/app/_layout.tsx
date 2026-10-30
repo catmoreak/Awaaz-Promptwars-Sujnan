@@ -9,8 +9,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Loader } from '@/components/Loader';
 import { LanguageProvider } from '@/lib/i18n';
 import { SessionProvider, useSession } from '@/lib/session';
 import { color, font } from '@/theme';
@@ -18,19 +19,14 @@ import { color, font } from '@/theme';
 function Routes() {
   const { user, loading } = useSession();
 
-  if (loading) {
-    return (
-      <View style={{ alignItems: 'center', backgroundColor: color.monsoonDeep, flex: 1, justifyContent: 'center' }}>
-        <ActivityIndicator color={color.mint} />
-      </View>
-    );
-  }
+  if (loading) return <Loader fullScreen />;
 
   return (
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: color.monsoonDeep },
-        headerTintColor: '#FFFFFF',
+        headerTintColor: color.ink,
+        headerShadowVisible: false,
         headerTitleStyle: { fontFamily: font.semibold },
         contentStyle: { backgroundColor: color.rain },
       }}
@@ -48,7 +44,7 @@ function Routes() {
 }
 
 export default function RootLayout() {
-  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 3_000 } } }));
+  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: 3, staleTime: 3_000 } } }));
   const [fontsLoaded, fontError] = useFonts({
     AnekKannada_400Regular,
     AnekKannada_500Medium,
@@ -57,7 +53,7 @@ export default function RootLayout() {
   });
 
   // A failed font load falls back to the system font, so it must not block the app.
-  if (!fontsLoaded && !fontError) return <View style={{ backgroundColor: color.monsoonDeep, flex: 1 }} />;
+  if (!fontsLoaded && !fontError) return <View style={{ backgroundColor: color.rain, flex: 1 }} />;
 
   return (
     <SafeAreaProvider>

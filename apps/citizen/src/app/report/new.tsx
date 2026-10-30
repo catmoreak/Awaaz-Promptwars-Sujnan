@@ -16,7 +16,7 @@ import { ApiError, api } from '@/lib/api';
 import { useLanguage, type Language } from '@/lib/i18n';
 import { useVoiceRecorder } from '@/lib/useVoiceRecorder';
 import { MAX_RECORDING_MS } from '@/lib/voice';
-import { color, font } from '@/theme';
+import { categoryIcon, color, font } from '@/theme';
 
 const IMAGE_MAX_WIDTH = 1280;
 
@@ -157,7 +157,7 @@ export default function NewReport() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
-        <Section title={t.describe} hint={t.describeHint}>
+        <Section title={t.describe}>
           <TextInput
             accessibilityLabel={t.describe}
             maxLength={LIMITS.textMax}
@@ -167,7 +167,6 @@ export default function NewReport() {
             textAlignVertical="top"
             value={text}
           />
-          {voiceAvailable === false && <Muted>{t.voiceOff}</Muted>}
           {voiceAvailable && (
             <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={t.voiceLanguage}>
               {VOICE_OPTIONS.map((option) => (
@@ -189,15 +188,14 @@ export default function NewReport() {
               kind="quiet"
               busy={transcribe.isPending}
               label={transcribe.isPending ? t.transcribing : voice.recording ? t.stop : t.speak}
-              icon={voice.recording ? <Square color={color.critical} size={18} /> : <Mic color={color.monsoon} size={20} />}
+              icon={voice.recording ? <Square color={color.critical} size={18} /> : <Mic color={color.ink} size={20} />}
               onPress={() => void (voice.recording ? stopRecording() : startRecording())}
             />
           )}
-          {viaVoice && <Muted>{t.voiceReview}</Muted>}
           {voiceError && <ErrorText>{voiceError}</ErrorText>}
         </Section>
 
-        <Section title={t.photo} hint={t.photoOptional}>
+        <Section title={t.photo}>
           {photo ? (
             <>
               <Image accessibilityIgnoresInvertColors source={{ uri: photo.uri }} style={styles.photo} />
@@ -206,32 +204,40 @@ export default function NewReport() {
           ) : (
             <View style={styles.row}>
               {Platform.OS !== 'web' && (
-                <Button kind="quiet" label={t.takePhoto} icon={<Camera color={color.monsoon} size={20} />} onPress={() => void pickPhoto('camera')} style={styles.flex} />
+                <Button kind="quiet" label={t.takePhoto} icon={<Camera color={color.ink} size={20} />} onPress={() => void pickPhoto('camera')} style={styles.flex} />
               )}
-              <Button kind="quiet" label={t.choosePhoto} icon={<ImagePlus color={color.monsoon} size={20} />} onPress={() => void pickPhoto('library')} style={styles.flex} />
+              <Button kind="quiet" label={t.choosePhoto} icon={<ImagePlus color={color.ink} size={20} />} onPress={() => void pickPhoto('library')} style={styles.flex} />
             </View>
           )}
         </Section>
 
         <Section title={t.category}>
-          <View style={styles.chips}>
-            {CATEGORIES.map((item) => (
-              <Pressable
-                key={item}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: category === item }}
-                onPress={() => setCategory(item)}
-                style={[styles.chip, category === item && styles.chipSelected]}
-              >
-                <Text style={[styles.chipText, category === item && styles.chipTextSelected]}>{CATEGORY_LABELS[item][language]}</Text>
-              </Pressable>
-            ))}
+          <View style={styles.tiles}>
+            {CATEGORIES.map((item) => {
+              const Icon = categoryIcon[item];
+              const selected = category === item;
+              return (
+                <Pressable
+                  key={item}
+                  accessibilityRole="radio"
+                  accessibilityLabel={CATEGORY_LABELS[item][language]}
+                  accessibilityState={{ selected }}
+                  onPress={() => setCategory(item)}
+                  style={[styles.tile, selected && styles.chipSelected]}
+                >
+                  <Icon color={color.ink} size={22} />
+                  <Text numberOfLines={2} style={styles.tileText}>
+                    {CATEGORY_LABELS[item][language]}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </Section>
 
-        <Section title={t.location} hint={t.locationHint}>
+        <Section title={t.location}>
           <MapPicker value={point} onChange={setPoint} />
-          <Button kind="quiet" busy={locating} label={locating ? t.locating : t.useMyLocation} icon={<LocateFixed color={color.monsoon} size={20} />} onPress={() => void useMyLocation()} />
+          <Button kind="quiet" busy={locating} label={locating ? t.locating : t.useMyLocation} icon={<LocateFixed color={color.ink} size={20} />} onPress={() => void useMyLocation()} />
           {locationError && <ErrorText>{locationError}</ErrorText>}
           {point && (
             <Muted>
@@ -258,13 +264,13 @@ export default function NewReport() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { alignSelf: 'center', gap: 22, maxWidth: 620, padding: 16, width: '100%' },
+  content: { alignSelf: 'center', gap: 24, maxWidth: 620, padding: 20, width: '100%' },
   section: { gap: 8 },
   row: { flexDirection: 'row', gap: 8 },
   textArea: {
     backgroundColor: color.surface,
-    borderColor: '#B3C4C1',
-    borderRadius: 8,
+    borderColor: color.line,
+    borderRadius: 14,
     borderWidth: 1,
     color: color.ink,
     fontFamily: font.regular,
@@ -275,17 +281,31 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: color.surface,
-    borderColor: '#B3C4C1',
-    borderRadius: 8,
+    borderColor: color.line,
+    borderRadius: 14,
     borderWidth: 1,
     color: color.ink,
     fontFamily: font.regular,
     fontSize: 16,
-    minHeight: 48,
+    minHeight: 50,
     paddingHorizontal: 12,
   },
   photo: { aspectRatio: 4 / 3, borderRadius: 8, width: '100%' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tile: {
+    alignItems: 'center',
+    backgroundColor: color.surface,
+    borderColor: color.line,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexBasis: '31%',
+    flexGrow: 1,
+    gap: 6,
+    justifyContent: 'center',
+    minHeight: 84,
+    padding: 8,
+  },
+  tileText: { color: color.ink, fontFamily: font.medium, fontSize: 13, lineHeight: 17, textAlign: 'center' },
   chip: {
     backgroundColor: color.surface,
     borderColor: color.line,
@@ -297,6 +317,6 @@ const styles = StyleSheet.create({
   },
   chipSelected: { backgroundColor: color.monsoon, borderColor: color.monsoon },
   chipText: { color: color.ink, fontFamily: font.medium, fontSize: 15 },
-  chipTextSelected: { color: '#FFFFFF' },
+  chipTextSelected: { color: color.onAccent },
   centered: { textAlign: 'center' },
 });

@@ -35,8 +35,7 @@ export function AddReport({ onAdded }: { onAdded: () => void }) {
 
   return (
     <form className="add-report" onSubmit={submit}>
-      <h1>Add a report from outside the app</h1>
-      <p className="lead">Use this for calls, walk-ins and messages. Paste or type what the citizen said.</p>
+      <h1>Add a report</h1>
 
       <label>
         Report

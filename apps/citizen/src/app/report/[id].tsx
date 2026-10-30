@@ -2,8 +2,9 @@ import { CATEGORY_LABELS, STATUS_LABELS, type CitizenReportDto, type IssueStatus
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Check } from 'lucide-react-native';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Loader } from '@/components/Loader';
 import { BandLabel, Body, Button, Divider, ErrorText, Heading, Hexagon, Muted } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
@@ -29,7 +30,7 @@ function ProgressSteps({ status }: { status: IssueStatus }) {
                 <Hexagon size={26} fill={done ? color.monsoon : color.line} />
                 {done && (
                   <View style={styles.stepCheck}>
-                    <Check color="#FFFFFF" size={14} />
+                    <Check color={color.onAccent} size={14} />
                   </View>
                 )}
               </View>
@@ -67,17 +68,14 @@ function Understanding({ report }: { report: CitizenReportDto }) {
   return (
     <View style={styles.card}>
       <Heading>{t.aiRead}</Heading>
-      <Field label={t.summary} value={analysis.summary} />
-      <Field label={t.category2} value={CATEGORY_LABELS[analysis.category][language]} />
+      <Body>{analysis.summary}</Body>
       {issue && (
         <View style={styles.field}>
           <Muted>{t.priority}</Muted>
           <BandLabel band={issue.priorityBand} />
-          <Body>{issue.priorityExplanation}</Body>
         </View>
       )}
       {analysis.dedupe?.decision === 'MERGED' && issue && <Field label={t.duplicate} value={t.alreadyReported(issue.reportCount)} />}
-      {analysis.source === 'RULES' && <Muted>{t.rulesNote}</Muted>}
     </View>
   );
 }
@@ -121,9 +119,7 @@ export default function ReportDetail() {
   const data = report.data;
   if (!data) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={color.monsoon} />
-      </View>
+      <Loader fullScreen />
     );
   }
 
@@ -131,11 +127,8 @@ export default function ReportDetail() {
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
       {data.processing && (
         <View style={styles.processing}>
-          <ActivityIndicator color="#FFFFFF" />
-          <View style={styles.processingText}>
-            <Text style={styles.processingTitle}>{t.checking}</Text>
-            <Text style={styles.processingHint}>{t.checkingHint}</Text>
-          </View>
+          <Text style={styles.processingTitle}>{t.checking}</Text>
+          <Loader />
         </View>
       )}
 
@@ -170,13 +163,11 @@ export default function ReportDetail() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: 'center', gap: 12, maxWidth: 620, padding: 16, width: '100%' },
+  content: { alignSelf: 'center', gap: 12, maxWidth: 620, padding: 20, width: '100%' },
   centered: { alignItems: 'center', flex: 1, gap: 12, justifyContent: 'center', padding: 16 },
-  processing: { alignItems: 'center', backgroundColor: color.monsoon, borderRadius: 8, flexDirection: 'row', gap: 12, padding: 14 },
-  processingText: { flex: 1 },
-  processingTitle: { color: '#FFFFFF', fontFamily: font.semibold, fontSize: 16 },
-  processingHint: { color: '#E4F0EE', fontFamily: font.regular, fontSize: 14 },
-  card: { backgroundColor: color.surface, borderRadius: 8, gap: 10, padding: 14 },
+  processing: { alignItems: 'center', backgroundColor: color.surface, borderColor: color.line, borderRadius: 16, borderWidth: 1, gap: 4, padding: 16 },
+  processingTitle: { color: color.ink, fontFamily: font.semibold, fontSize: 16 },
+  card: { backgroundColor: color.surface, borderColor: color.line, borderRadius: 16, borderWidth: 1, gap: 10, padding: 18 },
   field: { gap: 1 },
   photo: { aspectRatio: 4 / 3, borderRadius: 8, width: '100%' },
   step: { flexDirection: 'row', gap: 10, minHeight: 38 },

@@ -9,6 +9,8 @@ const pool = {
   connectionTimeoutMillis: 30_000,
   idleTimeoutMillis: 300_000,
   keepAlive: true,
+  // A dropped connection then fails and gets retried, instead of leaving a request hanging.
+  query_timeout: 20_000,
 };
 
 export const db = new PrismaClient({

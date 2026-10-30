@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 8 },
   input: {
     backgroundColor: color.surface,
-    borderColor: '#B3C4C1',
+    borderColor: color.line,
     borderRadius: 8,
     borderWidth: 1,
     color: color.ink,

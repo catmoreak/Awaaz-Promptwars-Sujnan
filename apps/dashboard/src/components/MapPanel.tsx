@@ -2,12 +2,12 @@ import { SERVICE_AREA, type MapResponse, type PriorityBand } from '@awaaz/shared
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import { useEffect, useMemo } from 'react';
 import { BAND_LABELS } from './Hexagon';
+import { Loader } from './Loader';
 
 const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
 
 const BANDS = Object.keys(BAND_LABELS) as PriorityBand[];
 
-/** For a light street map. */
 export const BAND_COLORS: Record<PriorityBand, string> = {
   CRITICAL: '#B42318',
   HIGH: '#C4560B',
@@ -15,19 +15,12 @@ export const BAND_COLORS: Record<PriorityBand, string> = {
   LOW: '#3F7564',
 };
 
-/** For the dark town map, checked for colour-blind separation against the map background. */
-const NIGHT_COLORS: Record<PriorityBand, string> = {
+/** Checked for colour-blind separation against the dark map. */
+const TOWN_COLORS: Record<PriorityBand, string> = {
   CRITICAL: '#E84C66',
   HIGH: '#F59A2C',
   MEDIUM: '#F7E48C',
   LOW: '#4FC3A1',
-};
-
-const NIGHT_TEXT: Record<PriorityBand, string> = {
-  CRITICAL: '#FFFFFF',
-  HIGH: '#12302F',
-  MEDIUM: '#12302F',
-  LOW: '#12302F',
 };
 
 interface MapPanelProps {
@@ -136,10 +129,7 @@ function TownMap({ data, selectedIssueId, onSelectIssue }: MapPanelProps) {
     };
   }, [data?.grid]);
 
-  // The worst areas light up first, so the eye lands on them.
-  const litCells = useMemo(() => [...(data?.cells ?? [])].sort((a, b) => b.topScore - a.topScore), [data?.cells]);
-
-  if (!view || !data) return <div className="map-empty">Loading the town map</div>;
+  if (!view || !data) return <Loader />;
 
   const outline = (boundary: { lat: number; lng: number }[]) =>
     boundary.map(({ lat, lng }) => `${view.x(lng)},${view.y(lat)}`).join(' ');
@@ -150,25 +140,9 @@ function TownMap({ data, selectedIssueId, onSelectIssue }: MapPanelProps) {
         <polygon key={index} className="town-cell" points={outline(boundary)} strokeWidth={view.unit} />
       ))}
 
-      {litCells.map((cell, index) => {
-        const center = centerOf(cell.boundary);
+      {data.cells.map((cell) => {
         return (
-          <g key={cell.h3} className="lit-cell" style={{ animationDelay: `${Math.min(index, 20) * 45}ms` }}>
-            <polygon points={outline(cell.boundary)} fill={NIGHT_COLORS[cell.topBand]} />
-            {cell.reportCount > 1 && (
-              <text
-                x={view.x(center.lng)}
-                y={view.y(center.lat)}
-                fill={NIGHT_TEXT[cell.topBand]}
-                fontSize={view.unit * 19}
-                fontWeight={700}
-                textAnchor="middle"
-                dominantBaseline="central"
-              >
-                {cell.reportCount}
-              </text>
-            )}
-          </g>
+          <polygon key={cell.h3} points={outline(cell.boundary)} fill={TOWN_COLORS[cell.topBand]} />
         );
       })}
 
@@ -186,9 +160,9 @@ function TownMap({ data, selectedIssueId, onSelectIssue }: MapPanelProps) {
             className="town-pin"
             cx={view.x(issue.lng)}
             cy={view.y(issue.lat)}
-            r={view.unit * (selected ? 10 : 4.5)}
-            fill={selected ? '#FFFFFF' : '#0A3D3B'}
-            stroke={selected ? '#0A3D3B' : '#FFFFFF'}
+            r={view.unit * (selected ? 10 : 3.5)}
+            fill={selected ? '#FFFFFF' : '#0A1410'}
+            stroke={selected ? '#0A1410' : '#FFFFFF'}
             strokeWidth={view.unit * (selected ? 3.5 : 1.5)}
             onClick={() => onSelectIssue(issue.id)}
           >
@@ -196,6 +170,26 @@ function TownMap({ data, selectedIssueId, onSelectIssue }: MapPanelProps) {
           </circle>
         );
       })}
+
+      {data.cells
+        .filter((cell) => cell.reportCount > 1)
+        .map((cell) => {
+          const center = centerOf(cell.boundary);
+          return (
+            <text
+              key={cell.h3}
+              className="cell-count"
+              x={view.x(center.lng)}
+              y={view.y(center.lat)}
+              fontSize={view.unit * 19}
+              strokeWidth={view.unit * 4}
+              textAnchor="middle"
+              dominantBaseline="central"
+            >
+              {cell.reportCount}
+            </text>
+          );
+        })}
     </svg>
   );
 }
@@ -221,8 +215,7 @@ export function MapPanel(props: MapPanelProps) {
   return (
     <div className="map-frame map-night">
       <TownMap {...props} />
-      <MapLegend colors={NIGHT_COLORS} />
-      <p className="map-notice">Moodbidri as H3 cells, about 350 m across. Numbers count reports.</p>
+      <MapLegend colors={TOWN_COLORS} />
       {synthetic && <p className="synthetic-flag">Synthetic demo data</p>}
     </div>
   );
