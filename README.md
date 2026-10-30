@@ -4,7 +4,7 @@ Awaaz turns scattered citizen complaints into prioritized, explainable and track
 
 A citizen reports a problem by typing, speaking or attaching a photo. Awaaz works out what it is, checks whether someone already reported it, and scores how urgent it is using factors an officer can see. Officers get one ranked queue and a map of hotspots. Citizens can follow their report until it is resolved.
 
-See [LIMITATIONS.md](LIMITATIONS.md) for what is real, what is mocked and where the AI can be wrong.
+
 
 ## Why Awaaz stands out
 
