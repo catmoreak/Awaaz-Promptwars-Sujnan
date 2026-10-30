@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
+    coverage: { include: ['src/**/*.ts'], exclude: ['src/generated/**', 'src/**/*.test.ts', 'src/server.ts', 'src/db.ts'] },
     // Blank keys stop any test from reaching a real AI provider, even when a local .env holds them.
     env: {
       NODE_ENV: 'test',

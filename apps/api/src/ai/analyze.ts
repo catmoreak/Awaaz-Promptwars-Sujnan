@@ -20,7 +20,7 @@ const LlmAnalysisSchema = z.object({
   imageNote: z.string().max(240).nullable().default(null),
 });
 
-export interface ReportInput {
+interface ReportInput {
   text: string;
   userCategory: Category;
   image?: ImagePart;

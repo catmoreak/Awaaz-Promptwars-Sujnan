@@ -12,14 +12,14 @@ import {
 } from '@awaaz/shared';
 import { cellPolygon, type LatLng } from '../geo';
 
-export const MIN_ISSUES_FOR_HOTSPOT = 3;
-export const MIN_ISSUES_FOR_CHAIN = 2;
+const MIN_ISSUES_FOR_HOTSPOT = 3;
+const MIN_ISSUES_FOR_CHAIN = 2;
 
 export interface HotspotIssue extends IssueSummaryDto {
   h3Res9: string;
 }
 
-export interface ResolvedIssue {
+interface ResolvedIssue {
   h3Res9: string;
   category: Category;
 }
@@ -50,6 +50,16 @@ function connectedCells(cells: string[]): string[][] {
   return groups;
 }
 
+function groupByCell(issues: HotspotIssue[]): Map<string, HotspotIssue[]> {
+  const byCell = new Map<string, HotspotIssue[]>();
+  for (const issue of issues) {
+    const cell = byCell.get(issue.h3Res9);
+    if (cell) cell.push(issue);
+    else byCell.set(issue.h3Res9, [issue]);
+  }
+  return byCell;
+}
+
 function linkedChain(categories: Category[]): Category[] | null {
   const present = new Set(categories);
   for (const chain of CAUSE_CHAINS) {
@@ -76,8 +86,7 @@ function centerOf(issues: LatLng[]): LatLng {
  * cause chain such as a blocked drain flooding a road, or with a problem that has come back.
  */
 export function buildHotspots(open: HotspotIssue[], recentlyResolved: ResolvedIssue[]): HotspotDto[] {
-  const byCell = new Map<string, HotspotIssue[]>();
-  for (const issue of open) byCell.set(issue.h3Res9, [...(byCell.get(issue.h3Res9) ?? []), issue]);
+  const byCell = groupByCell(open);
 
   return connectedCells([...byCell.keys()])
     .flatMap((cells): HotspotDto[] => {
@@ -128,10 +137,7 @@ export function buildTownGrid(center: LatLng): LatLng[][] {
 }
 
 export function buildMapCells(open: HotspotIssue[]): MapCellDto[] {
-  const byCell = new Map<string, HotspotIssue[]>();
-  for (const issue of open) byCell.set(issue.h3Res9, [...(byCell.get(issue.h3Res9) ?? []), issue]);
-
-  return [...byCell.entries()].map(([h3, issues]) => {
+  return [...groupByCell(open).entries()].map(([h3, issues]) => {
     const topScore = Math.max(...issues.map((issue) => issue.priority.score));
     return {
       h3,

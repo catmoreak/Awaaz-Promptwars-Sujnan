@@ -13,7 +13,7 @@ interface Provider {
   model: string;
 }
 
-export interface LlmResult<T> {
+interface LlmResult<T> {
   data: T;
   model: string;
 }

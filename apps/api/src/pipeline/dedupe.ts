@@ -4,20 +4,20 @@ import { cosine, hashEmbedding, LOCAL_EMBEDDING_MODEL } from '../ai/embeddings';
 import { generateJson, untrusted } from '../ai/llm';
 import { distanceMeters, type LatLng } from '../geo';
 
-export const MAX_DUPLICATE_DISTANCE_M = 200;
+const MAX_DUPLICATE_DISTANCE_M = 200;
 /** Near-identical wording farther apart than this can still be two potholes on one road. */
-export const AUTO_MERGE_MAX_DISTANCE_M = 75;
+const AUTO_MERGE_MAX_DISTANCE_M = 75;
 
 /**
  * `local` comes from a sweep over the labelled synthetic pairs, so it is tuned to a small sample.
  * `semantic` is a starting point until `eval:dedupe` runs with real embeddings.
  */
-export const THRESHOLDS = {
+const THRESHOLDS = {
   semantic: { merge: 0.9, review: 0.75 },
   local: { merge: 0.42, review: 0.25 },
 };
 
-export interface CandidateReport {
+interface CandidateReport {
   text: string;
   embedding: number[];
   embeddingModel: string | null;
@@ -37,7 +37,7 @@ export interface IncomingReport extends LatLng {
   embeddingModel: string;
 }
 
-export interface RankedCandidate {
+interface RankedCandidate {
   issue: CandidateIssue;
   similarity: number;
   distanceM: number;
@@ -105,7 +105,7 @@ Return JSON with keys sameIssue (boolean) and reason (one sentence in English).`
   return data;
 }
 
-export interface DedupeResult {
+interface DedupeResult {
   decision: DedupeDecision;
   mergeIntoIssueId: string | null;
 }

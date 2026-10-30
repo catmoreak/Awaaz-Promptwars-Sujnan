@@ -32,7 +32,7 @@ const strings = {
     track: 'Track a report',
     close: 'Close',
     headline: 'Report a civic problem in Moodbidri',
-    lead: 'Say what is wrong , mark the place, and follow the work until it is resolved.',
+    lead: 'Say what is wrong, mark the place, and follow the work until it is resolved.',
     howItWorks: 'How it works',
     steps: [
       ['Describe the problem', 'Speak or type in Kannada or English. Add a photo if you have one.'],

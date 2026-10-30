@@ -3,7 +3,7 @@ import { env } from '../config';
 export const LOCAL_EMBEDDING_MODEL = 'local-hash-v1';
 const LOCAL_DIMENSIONS = 512;
 
-export interface Embedding {
+interface Embedding {
   vector: number[];
   model: string;
 }

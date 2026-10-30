@@ -17,7 +17,7 @@ const IMAGE_SIGNATURES: Record<string, (bytes: Buffer) => boolean> = {
 };
 
 /** Checks the file's real signature, because the declared MIME type comes from the client. */
-export function decodeImage(image: { base64: string; mime: string }): { bytes: Buffer; mime: string } {
+function decodeImage(image: { base64: string; mime: string }): { bytes: Buffer; mime: string } {
   const bytes = Buffer.from(image.base64, 'base64');
   if (bytes.length === 0 || bytes.length > LIMITS.imageBytesMax) {
     throw badRequest('image_too_large', 'The photo must be under 3 MB');

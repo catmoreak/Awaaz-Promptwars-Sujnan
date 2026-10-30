@@ -55,7 +55,7 @@ The accuracy figures are best-case numbers on a small set written alongside the 
 - **Efficiency.** The 3D scene and the signed-in apps load separately, and the scene stops drawing when it is off-screen or behind a dialog. It also lowers its resolution on slow hardware.
 - **Shared rules.** Types, validation, workflow and the priority formula live in one package, so the website and API cannot disagree.
 - **Accessibility.** The site is responsive, keyboard focus is visible, and it respects reduced-motion settings. It is available in Kannada and English, and the sign-in form uses a native dialog.
-- **Testing.** Automated tests cover priority, validation, AI fallbacks, duplicate decisions, hotspots and voice, and a repeatable evaluation measures the AI itself.
+- **Testing.** 162 automated tests cover the priority formula, validation, the AI pipeline and its fallbacks, duplicate decisions, hotspots, voice, access control and photo handling. A repeatable evaluation measures the AI itself.
 
 ### Tech stack
 
@@ -180,10 +180,28 @@ The satellite maps use the browser key in `apps/web/src/shared/maps.ts`. It is i
 ## Tests
 
 ```sh
-pnpm test
-pnpm typecheck
-pnpm eval:dedupe
+pnpm test                                  # run all automated tests
+pnpm --filter @awaaz/api test:coverage     # API tests with a coverage report
+pnpm typecheck                             # strict TypeScript across the repo
+pnpm eval:dedupe                           # measure the AI on labelled reports
 ```
+
+All 162 automated tests run without a database or any API key. External services are replaced with test doubles, so the suite is fast, repeatable and never touches real data.
+
+| Area | What the tests prove |
+|---|---|
+| Access control | Requests with no session or a forged session are refused, citizens cannot reach officer routes, and only the reporter or an officer can open a photo. |
+| Sign-in | A wrong password and an unknown account get the same answer, and bad input is refused with a clear reason. |
+| AI pipeline | A report becomes a new issue or joins an open one, and it still reaches officers if its photo cannot be read. |
+| AI analysis | Malformed model replies are rejected, providers fall back in order, and safety keywords can raise hazard but never lower it. |
+| Duplicates | Thresholds, category and distance rules decide when to merge, and doubtful pairs stay separate. |
+| Priority | Scores are deterministic, the safety floor holds, and one citizen reposting adds no extra weight. |
+| Hotspots | Clusters, linked problems and recurring problems are found, and unrelated areas stay apart. |
+| Workflow | Disallowed status moves are refused, closing needs a note, and assigning needs a team. |
+| Photos and location | Fake files and oversized photos are refused, photos survive a storage outage, and locations outside the service area are refused. |
+| Google lookups | A refused or failed lookup is logged and shown as "not checked", rather than being treated as "nothing nearby". |
+
+The API has 68% line coverage, with the AI pipeline at 95%. The queue worker, the storage client and some route handlers are not unit tested, and the website has no automated tests, so its screens are checked by hand.
 
 `pnpm eval:dedupe` runs the real analysis and duplicate steps over the 46 labelled synthetic reports and prints category accuracy, precision and recall. It runs in memory, so it needs no seeded data and writes nothing to the database, but it does call the AI providers. Re-seeding with `pnpm db:seed` removes only synthetic rows, demo-account reports and issues with no reports left.
 
